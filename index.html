@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Peds IV Calc + Osmolarity + Rules (PyScript on GitHub Pages)</title>
+
+  <!-- PyScript: 固定リリース（2025.7.3）。latestやunstableではなく、必ず固定版を参照する -->
+  <link rel="stylesheet" href="https://pyscript.net/releases/2025.7.3/core.css">
+  <script type="module" src="https://pyscript.net/releases/2025.7.3/core.js"></script>
+
+  <style>
+    body { font-family: ui-sans-serif, -apple-system, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; margin: 16px; }
+    h1 { font-size: 1.2rem; margin: 0 0 8px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px;}
+    input[type=number] { width: 8rem; }
+    select { max-width: 14rem; }
+    button { padding: 6px 10px; }
+    .line { border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin: 10px 0; background:#fafafa;}
+    .line h3 { margin: 0 0 8px; font-size: 1.05rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    th, td { border: 1px solid #e5e5e5; padding: 6px; font-size: 0.95rem; }
+    th { background: #f0f0f0; }
+    .muted { color: #666; font-size: 0.9rem; }
+    #output { white-space: pre; background: #0b1020; color: #d3ffd3; padding: 12px; border-radius: 8px; overflow:auto; min-height: 240px;}
+    .btn-danger { background:#8b0000; color:#fff; }
+  </style>
+</head>
+<body>
+  <h1>小児/新生児 輸液ブレンド計算（浸透圧・配合禁忌・GIR・脂肪）— PyScript / GitHub Pages</h1>
+
+  <div class="row">
+    <label>体重(kg) <input id="wt" type="number" step="0.01" value="12.00"></label>
+    <label>モード
+      <select id="mode">
+        <option>一般モード</option>
+        <option>新生児モード</option>
+      </select>
+    </label>
+    <label>浸透圧計算
+      <select id="aa_osm">
+        <option>浸透圧にAA寄与を含めない</option>
+        <option>浸透圧にAA寄与を含める</option>
+      </select>
+    </label>
+    <button id="add-line">ライン追加</button>
+    <button id="compute" style="margin-left:auto;">計算</button>
+  </div>
+
+  <div class="muted">
+    末梢ルートで浸透圧 &gt; 900 mOsm/L は警告。K濃度 &gt; 40 mEq/L、K速度 &gt; 20 mEq/h は警告。Ca×P, Ca×HCO3- 禁忌、Mg×P 注意、脂肪は混注不可。
+  </div>
+
+  <!-- コンポーネント候補（Pythonが埋める） -->
+  <datalist id="comp-options"></datalist>
+
+  <!-- ラインUI -->
+  <div id="lines"></div>
+
+  <h3>結果</h3>
+  <div id="output">(ここに結果が出る)</div>
+
+  <!-- ここからPython本体。PyScriptの新仕様に合わせ <script type="py"> を使用 -->
+  <script type="py">
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Dict, List, Tuple
+from js import document
+from pyodide.ffi import create_proxy
+
+# ====== 仕様・閾値 ======
+PERIPHERAL_OSM_LIMIT = 900.0
+GIR_LIMIT_GENERAL    = 5.0
+GIR_TARGET_NEONATE_LOW  = 8.0
+GIR_LIMIT_NEONATE_HIGH  = 12.0
+KCL_MAX_CONC = 40.0
+KCL_MAX_RATE = 20.0
+AA_OSM_PER_G = 9.0
+MW = {"GLUCOSE": 180.156}
+
+ION_ORDER = ["Na","K","Cl","Ca","Mg","Lactate","Acetate","Citrate","Sulfate","Bicarbonate","Aspartate"]
+VALENCE   = {"Na":1,"K":1,"Cl":1,"Bicarbonate":1,"Lactate":1,"Acetate":1,"Ca":2,"Mg":2,"Citrate":3,"Sulfate":2,"Aspartate":1}
+
+def perL(x): return x/1000.0
+def gL(x):  return x/1000.0
+def mmolL(x): return x/1000.0
+
+@dataclass
+class Component:
+    name: str
+    glucose_g_ml: float = 0.0
+    aa_g_ml: float = 0.0
+    lipid_g_ml: float = 0.0
+    kcal_per_ml_override: float | None = None
+    elec_meq_ml: Dict[str, float] = field(default_factory=dict)
+    phosphate_mmol_ml: float = 0.0
+    description: str = ""
+    def kcal_per_ml(self)->float:
+        if self.kcal_per_ml_override is not None: return self.kcal_per_ml_override
+        return (self.glucose_g_ml*4.0)+(self.aa_g_ml*4.0)+(self.lipid_g_ml*9.0)
+
+@dataclass
+class MixRow:
+    comp_key: str
+    volume_ml: float
+
+@dataclass
+class Line:
+    name: str
+    route: str = "末梢"
+    flow_ml_h: float = 0.0
+    rows: List[MixRow] = field(default_factory=list)
+
+# ---- 製剤DB（前回仕様+アスパラギン酸K/注射用水/TPN等） ----
+def elneopa_from_upper(name, final_ml, upper_ml, g_NaCl, g_KCl, g_NaLac, g_KH2PO4, glu_g_total, aa_g_total):
+    NaCl_MW=58.44; KCl_MW=74.55; NaLac_MW=112.06; KH2PO4_MW=136.09
+    mol_NaCl = g_NaCl/NaCl_MW; mol_KCl=g_KCl/KCl_MW; mol_NaL=g_NaLac/NaLac_MW; mol_KP=g_KH2PO4/KH2PO4_MW
+    meq_Na=(mol_NaCl+mol_NaL)*1000; meq_K=(mol_KCl+mol_KP)*1000; meq_Cl=(mol_NaCl+mol_KCl)*1000; meq_Lac=mol_NaL*1000
+    mmol_P=mol_KP*1000
+    return Component(
+        name=name,
+        glucose_g_ml=glu_g_total/final_ml,
+        aa_g_ml=aa_g_total/final_ml,
+        elec_meq_ml={"Na":meq_Na/final_ml,"K":meq_K/final_ml,"Cl":meq_Cl/final_ml,"Lactate":meq_Lac/final_ml},
+        phosphate_mmol_ml=mmol_P/final_ml,
+        description=f"混合後{final_ml}mL（上室{upper_ml}mL由来）"
+    )
+
+def build_db()->Dict[str,Component]:
+    db: Dict[str,Component] = {}
+    db["注射用水（溶媒）"] = Component("注射用水（溶媒）", description="電解質/糖=0。単独投与禁止（溶媒専用）")
+
+    # 晶質・糖液
+    db["生理食塩液 0.9%"] = Component("生理食塩液 0.9%", elec_meq_ml={"Na":perL(154),"Cl":perL(154)}, description="Na154, Cl154 mEq/L")
+    db["乳酸リンゲル"] = Component("乳酸リンゲル", elec_meq_ml={"Na":perL(130),"K":perL(4),"Ca":perL(3),"Cl":perL(109),"Lactate":perL(28)}, description="Na130,K4,Ca3,Cl109,Lac28")
+    db["酢酸リンゲル（ヴィーンF相当）"] = Component("酢酸リンゲル（ヴィーンF相当）", elec_meq_ml={"Na":perL(130),"K":perL(4),"Ca":perL(3),"Cl":perL(109),"Acetate":perL(28)}, description="Na130,K4,Ca3,Cl109,Acetate28")
+    db["ヴィーンD（酢酸+Glu5%）"] = Component("ヴィーンD（酢酸+Glu5%）", glucose_g_ml=gL(50), elec_meq_ml={"Na":perL(130),"K":perL(4),"Ca":perL(3),"Cl":perL(109),"Acetate":perL(28)}, description="Glu5%")
+
+    db["ソリタT1"]  = Component("ソリタT1",  glucose_g_ml=gL(26), elec_meq_ml={"Na":perL(90),"Cl":perL(70),"Lactate":perL(20)}, description="Pなし")
+    db["ソリタT2"]  = Component("ソリタT2",  glucose_g_ml=gL(32), elec_meq_ml={"Na":perL(84),"K":perL(20),"Cl":perL(66),"Lactate":perL(20)}, phosphate_mmol_ml=mmolL(10), description="P 10 mmol/L")
+    db["ソリタT3"]  = Component("ソリタT3",  glucose_g_ml=gL(43), elec_meq_ml={"Na":perL(35),"K":perL(20),"Cl":perL(35),"Lactate":perL(20)})
+    db["ソリタT3G"] = Component("ソリタT3G", glucose_g_ml=gL(75), elec_meq_ml={"Na":perL(35),"K":perL(20),"Cl":perL(35),"Lactate":perL(20)})
+    db["KN3号"]     = Component("KN3号",     glucose_g_ml=gL(27), elec_meq_ml={"Na":perL(50),"K":perL(20),"Cl":perL(50),"Lactate":perL(20)})
+
+    db["5%ブドウ糖"]  = Component("5%ブドウ糖",  glucose_g_ml=gL(50))
+    db["10%ブドウ糖"] = Component("10%ブドウ糖", glucose_g_ml=gL(100))
+    db["20%ブドウ糖"] = Component("20%ブドウ糖", glucose_g_ml=gL(200))
+    db["50%ブドウ糖"] = Component("50%ブドウ糖", glucose_g_ml=gL(500))
+
+    # 補正剤
+    db["KCl 1 mEq/mL（混注）"]   = Component("KCl 1 mEq/mL（混注）", elec_meq_ml={"K":1.0,"Cl":1.0}, description="K濃度≤40, 速度≤20")
+    db["アスパラギン酸カリウム 1 mEq/mL"] = Component("アスパラギン酸カリウム 1 mEq/mL", elec_meq_ml={"K":1.0,"Aspartate":1.0}, description="Clを増やさずK補正")
+    db["リン酸ナトリウム 10mmol/20mL"]   = Component("リン酸ナトリウム 10mmol/20mL", elec_meq_ml={"Na":0.75}, phosphate_mmol_ml=0.5, description="P10mmol/20mL, Na15mEq/20mL")
+    db["リン酸カリウム 10mmol/20mL"]     = Component("リン酸カリウム 10mmol/20mL",   elec_meq_ml={"K":1.0},  phosphate_mmol_ml=0.5, description="P10mmol/20mL, K20mEq/20mL")
+    db["3%塩化ナトリウム注"]  = Component("3%塩化ナトリウム注",  elec_meq_ml={"Na":0.513,"Cl":0.513}, description="高張")
+    db["10%塩化ナトリウム注"] = Component("10%塩化ナトリウム注", elec_meq_ml={"Na":1.71,"Cl":1.71}, description="Na=Cl≈1.71 mEq/mL")
+    db["重炭酸ナトリウム 8.4%"] = Component("重炭酸ナトリウム 8.4%", elec_meq_ml={"Na":1.0,"Bicarbonate":1.0}, description="Caと配合禁忌")
+    db["Caグルコン酸 8.5%"]     = Component("Caグルコン酸 8.5%",     elec_meq_ml={"Ca":0.39}, description="P/重炭酸と配合禁忌")
+    db["MgSO4 1 mEq/mL"]         = Component("MgSO4 1 mEq/mL",         elec_meq_ml={"Mg":1.0})
+
+    # アミノ酸/脂肪
+    db["アミノ酸10%（汎用）」"] = Component("アミノ酸10%（汎用）」", aa_g_ml=gL(100), description="電解質無添加想定")
+    db["イントラリポス10%"] = Component("イントラリポス10%", lipid_g_ml=gL(100), kcal_per_ml_override=1.1, description="1.1 kcal/mL 等張")
+    db["イントラリポス20%"] = Component("イントラリポス20%", lipid_g_ml=gL(200), kcal_per_ml_override=2.0, description="2.0 kcal/mL 等張")
+
+    # PPN/混合製剤
+    def twimpal(vol):
+        s=vol/500.0
+        return Component(f"ツインパル {vol}mL", elec_meq_ml={"Na":(17.5*s)/vol,"K":(10*s)/vol,"Ca":(2.5*s)/vol,"Mg":(2.5*s)/vol,"Cl":(17.5*s)/vol,"Lactate":(10*s)/vol})
+    db["ツインパル 500mL"]=twimpal(500); db["ツインパル 1000mL"]=twimpal(1000)
+    def palesafe(vol):
+        s=vol/500.0
+        return Component(f"パレセーフ {vol}mL", elec_meq_ml={"Na":(17.1*s)/vol,"K":(10*s)/vol,"Ca":(2.5*s)/vol,"Mg":(2.5*s)/vol,"Cl":(17.6*s)/vol,"Lactate":(10*s)/vol})
+    db["パレセーフ 500mL"]=palesafe(500); db["パレセーフ 1000mL"]=palesafe(1000)
+    def pareplus(vol):
+        if vol==500:
+            elec={"Na":17.1/500,"K":10/500,"Ca":2.5/500,"Mg":2.5/500,"Cl":17.6/500,"Lactate":12.7/500,"Acetate":0.6/500,"Citrate":6/500}; pmmol=5/500
+        else:
+            elec={"Na":34.2/1000,"K":20/1000,"Ca":5.1/1000,"Mg":5.1/1000,"Cl":35.2/1000,"Lactate":25.5/1000,"Acetate":1.2/1000,"Citrate":12/1000}; pmmol=10/1000
+        return Component(f"パレプラス {vol}mL", elec_meq_ml=elec, phosphate_mmol_ml=pmmol)
+    db["パレプラス 500mL"]=pareplus(500); db["パレプラス 1000mL"]=pareplus(1000)
+    def bfluid(vol):
+        s=vol/500.0
+        glu=(37.5*s)/vol; aa=(15.0*s)/vol
+        elec={"Na":(17.5*s)/vol,"K":(10*s)/vol,"Mg":(2.5*s)/vol,"Ca":(2.5*s)/vol,"Cl":(17.5*s)/vol,"Sulfate":(2.5*s)/vol,"Acetate":(8*s)/vol,"Lactate":(10*s)/vol,"Citrate":(3*s)/vol}
+        pmmol=(5.0*s)/vol
+        return Component(f"ビーフリード {vol}mL（混合後）", glucose_g_ml=glu, aa_g_ml=aa, elec_meq_ml=elec, phosphate_mmol_ml=pmmol)
+    db["ビーフリード 500mL"]=bfluid(500); db["ビーフリード 1000mL"]=bfluid(1000)
+
+    # エルネオパ
+    db["エルネオパNF1号 1000mL"] = elneopa_from_upper("エルネオパNF1号 1000mL", 1000, 492, 2.220, 0.597, 1.270, 0.688, 120.0, 20.0)
+    db["エルネオパNF1号 1500mL"] = elneopa_from_upper("エルネオパNF1号 1500mL", 1500, 738, 3.330, 0.896, 1.905, 1.032, 175.0, 30.0)
+    db["エルネオパNF2号 1000mL"] = elneopa_from_upper("エルネオパNF2号 1000mL", 1000, 492, 2.050, 0.746, 1.590, 0.821, 175.0, 30.0)
+    db["エルネオパNF2号 1500mL"] = elneopa_from_upper("エルネオパNF2号 1500mL", 1500, 738, 3.075, 1.119, 2.385, 1.2315, 262.5, 45.0)
+    return db
+
+DB: Dict[str,Component] = build_db()
+COMP_KEYS = list(DB.keys())
+
+# ====== 計算ロジック ======
+def sum_line(line: Line) -> Tuple[float, Dict[str,float], float, float, float, float]:
+    total=0.0; totals_meq:Dict[str,float]={}; glu=aa=lip=0.0; phos=0.0
+    for r in line.rows:
+        comp=DB.get(r.comp_key); 
+        if not comp or r.volume_ml<=0: continue
+        v=r.volume_ml; total+=v
+        glu += comp.glucose_g_ml*v; aa += comp.aa_g_ml*v; lip += comp.lipid_g_ml*v
+        for ion,val in comp.elec_meq_ml.items():
+            totals_meq[ion] = totals_meq.get(ion,0.0) + val*v
+        phos += comp.phosphate_mmol_ml*v
+    return total, totals_meq, glu, aa, lip, phos
+
+def osmolarity(total_ml, totals_meq, glu_g, phos_mmol, aa_g, include_aa)->float:
+    if total_ml<=0: return 0.0
+    L = total_ml/1000.0
+    mOsm=0.0
+    for ion,tot_meq in totals_meq.items():
+        z=VALENCE.get(ion,1)
+        mmol = tot_meq / z
+        mOsm += mmol / L
+    mOsm += phos_mmol / L
+    glu_mmol_L = ((glu_g/L)/MW["GLUCOSE"]) * 1000.0
+    mOsm += glu_mmol_L
+    if include_aa:
+        mOsm += (aa_g/L)*AA_OSM_PER_G
+    return mOsm
+
+def gir_from_total_glu_g_day(total_glu_g_day, wt)->float:
+    if wt<=0: return 0.0
+    return (total_glu_g_day*1000.0)/(wt*1440.0)
+
+# ====== DOMヘルパ ======
+def set_output(text:str):
+    document.getElementById("output").innerText = text
+
+def populate_comp_options():
+    dl = document.getElementById("comp-options")
+    while dl.firstChild:
+        dl.removeChild(dl.firstChild)
+    for k in COMP_KEYS:
+        opt = document.createElement("option")
+        opt.value = k
+        dl.appendChild(opt)
+
+_line_seq = 0
+
+def add_comp_row(tbody):
+    tr = document.createElement("tr")
+    td1 = document.createElement("td"); td2=document.createElement("td"); td3=document.createElement("td")
+    inp = document.createElement("input"); inp.setAttribute("type","text"); inp.setAttribute("list","comp-options"); inp.classList.add("comp")
+    vol = document.createElement("input"); vol.setAttribute("type","number"); vol.setAttribute("step","0.1"); vol.value = "100.0"; vol.classList.add("vol")
+    btn = document.createElement("button"); btn.innerText="削除"
+    def _del_row(evt):
+        tr.remove()
+    btn.onclick = create_proxy(_del_row)
+    td1.appendChild(inp); td2.appendChild(vol); td3.appendChild(btn)
+    tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3)
+    tbody.appendChild(tr)
+
+def add_line(evt=None):
+    global _line_seq
+    _line_seq += 1
+    container = document.createElement("div"); container.classList.add("line")
+    title = document.createElement("h3"); title.innerText = f"Line{_line_seq}"
+    hdr = document.createElement("div"); hdr.classList.add("row")
+    lab_flow = document.createElement("label"); lab_flow.innerHTML = '流量 mL/h <input class="flow" type="number" step="0.1" value="50.0">'
+    lab_route = document.createElement("label"); lab_route.innerHTML = 'ルート <select class="route"><option>末梢</option><option>中心</option></select>'
+    btn_add = document.createElement("button"); btn_add.innerText="成分行追加"
+    btn_del = document.createElement("button"); btn_del.innerText="このラインを削除"; btn_del.classList.add("btn-danger")
+    hdr.appendChild(lab_flow); hdr.appendChild(lab_route); hdr.appendChild(btn_add); hdr.appendChild(btn_del)
+    table = document.createElement("table")
+    thead = document.createElement("thead"); thead.innerHTML = "<tr><th>コンポーネント</th><th>容量 mL</th><th></th></tr>"
+    tbody = document.createElement("tbody")
+    table.appendChild(thead); table.appendChild(tbody)
+    def _add_row(evt):
+        add_comp_row(tbody)
+    btn_add.onclick = create_proxy(_add_row)
+    def _del_line(evt):
+        container.remove()
+    btn_del.onclick = create_proxy(_del_line)
+    container.appendChild(title); container.appendChild(hdr); container.appendChild(table)
+    document.getElementById("lines").appendChild(container)
+    add_comp_row(tbody)
+
+def gather_lines()->List[Line]:
+    out: List[Line] = []
+    lines_div = document.getElementById("lines")
+    for i in range(lines_div.children.length):
+        node = lines_div.children.item(i)
+        if not node.classList.contains("line"): 
+            continue
+        name = node.querySelector("h3").innerText
+        flow = float(node.querySelector(".flow").value or "0")
+        route = node.querySelector(".route").value
+        rows: List[MixRow] = []
+        tb = node.querySelector("tbody")
+        for j in range(tb.children.length):
+            tr = tb.children.item(j)
+            key = tr.querySelector(".comp").value.strip()
+            vol = float(tr.querySelector(".vol").value or "0")
+            if key in DB and vol>0:
+                rows.append(MixRow(key, vol))
+        out.append(Line(name=name, route=route, flow_ml_h=flow, rows=rows))
+    return out
+
+def compute(evt=None):
+    try:
+        wt = float(document.getElementById("wt").value or "0")
+        neonate = (document.getElementById("mode").selectedIndex == 1)
+        include_aa = (document.getElementById("aa_osm").selectedIndex == 1)
+        lines = gather_lines()
+        if not lines:
+            set_output("ラインと成分を入力してくれ。"); return
+
+        total_flow_ml_h = 0.0
+        total_glu_g_day = 0.0
+        total_kcal_day  = 0.0
+        total_lipid_g_day = 0.0
+        alerts: List[str] = []
+        report_lines: List[str] = []
+        total_K_rate_meq_h = 0.0
+        per_day_meq_total: Dict[str,float] = {ion:0.0 for ion in ION_ORDER}
+        per_day_phos_mmol_total: float = 0.0
+
+        for li in lines:
+            total_ml, totals_meq, glu_g, aa_g, lip_g, phos_mmol = sum_line(li)
+            vol_day_ml = li.flow_ml_h*24.0
+            total_flow_ml_h += li.flow_ml_h
+
+            conc_meq_ml = {ion: (totals_meq.get(ion,0.0)/total_ml if total_ml>0 else 0.0) for ion in ION_ORDER}
+            k_conc_meq_L = conc_meq_ml.get("K",0.0)*1000.0
+            k_rate_meq_h = conc_meq_ml.get("K",0.0)*li.flow_ml_h
+            total_K_rate_meq_h += k_rate_meq_h
+
+            for ion in ION_ORDER:
+                per_day_meq_total[ion] += conc_meq_ml.get(ion,0.0)*vol_day_ml
+            if total_ml>0:
+                per_day_phos_mmol_total += (phos_mmol/total_ml)*vol_day_ml
+
+            kcal_ml=0.0; lip_g_ml=0.0
+            for r in li.rows:
+                comp = DB.get(r.comp_key)
+                if not comp or total_ml<=0: continue
+                frac = r.volume_ml/total_ml
+                kcal_ml += comp.kcal_per_ml()*frac
+                lip_g_ml += comp.lipid_g_ml*frac
+            kcal_day = kcal_ml*vol_day_ml
+            lipid_g_day = lip_g_ml*vol_day_ml
+            total_kcal_day += kcal_day
+            total_lipid_g_day += lipid_g_day
+
+            osm_th = osmolarity(total_ml, totals_meq, glu_g, phos_mmol, aa_g, include_aa=False)
+            osm_aa = osmolarity(total_ml, totals_meq, glu_g, phos_mmol, aa_g, include_aa=include_aa)
+            if li.route=="末梢" and osm_aa>PERIPHERAL_OSM_LIMIT:
+                alerts.append(f"[{li.name}] 浸透圧 {osm_aa:.0f} mOsm/L > {PERIPHERAL_OSM_LIMIT:.0f}（末梢不可）")
+
+            has_ca = conc_meq_ml.get("Ca",0.0)>0
+            has_mg = conc_meq_ml.get("Mg",0.0)>0
+            has_p  = (phos_mmol>0)
+            has_hco3 = conc_meq_ml.get("Bicarbonate",0.0)>0
+            if has_ca and has_p:    alerts.append(f"[{li.name}] 【禁忌】Ca塩×リン酸塩（沈殿）")
+            if has_ca and has_hco3: alerts.append(f"[{li.name}] 【禁忌】Ca塩×重炭酸（炭酸Ca沈殿）")
+            if has_mg and has_p:    alerts.append(f"[{li.name}] 【注意】Mg塩×リン酸塩（沈殿リスク）")
+            if any(("イントラリポス" in r.comp_key) for r in li.rows) and len(li.rows)>=2:
+                alerts.append(f"[{li.name}] 脂肪乳剤は混注不可（別ルート/Y側管）")
+
+            if k_conc_meq_L>KCL_MAX_CONC: alerts.append(f"[{li.name}] K濃度 {k_conc_meq_L:.1f} mEq/L > {KCL_MAX_CONC}")
+            if k_rate_meq_h>KCL_MAX_RATE: alerts.append(f"[{li.name}] K投与速度 {k_rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
+
+            ion_lines=[]
+            for ion in ION_ORDER:
+                v=conc_meq_ml.get(ion,0.0)*1000.0
+                if v>0: ion_lines.append(f"{ion:>10}: {v:6.2f} mEq/L")
+            if total_ml>0 and phos_mmol>0:
+                ion_lines.append(f"{'P (mmol/L)':>10}: {phos_mmol/(total_ml/1000.0):6.2f}")
+
+            report_lines.append(
+f"""=== {li.name} ===
+合計容量: {total_ml:.1f} mL   流量: {li.flow_ml_h:.1f} mL/h   ルート: {li.route}
+-- 浸透圧（mOsm/L） --  イオン+糖: {osm_th:.0f}    AA含: {osm_aa:.0f}
+-- 濃度（mEq/L ほか） --
+{chr(10).join(ion_lines)}
+-- エネルギー/脂肪 --
+  kcal密度: {kcal_ml:.2f} kcal/mL → {kcal_day:.0f} kcal/day
+  脂肪密度: {lip_g_ml:.3f} g/mL   → {lipid_g_day:.2f} g/day
+  K濃度: {k_conc_meq_L:.1f} mEq/L   K速度: {k_rate_meq_h:.1f} mEq/h
+""")
+
+            if total_ml>0:
+                total_glu_g_day += (glu_g/total_ml)*vol_day_ml
+
+        WQ  = (total_flow_ml_h*24.0)/wt if wt>0 else 0.0
+        GIR = gir_from_total_glu_g_day(total_glu_g_day, wt)
+
+        if total_K_rate_meq_h > KCL_MAX_RATE:
+            alerts.append(f"総K投与速度 {total_K_rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
+
+        if neonate:
+            if GIR > GIR_LIMIT_NEONATE_HIGH: alerts.append(f"GIR {GIR:.2f} mg/kg/min > {GIR_LIMIT_NEONATE_HIGH}（新生児上限）")
+            elif GIR < GIR_TARGET_NEONATE_LOW: alerts.append(f"GIR {GIR:.2f} mg/kg/min < {GIR_TARGET_NEONATE_LOW}（新生児目標域未満）")
+        else:
+            if GIR > GIR_LIMIT_GENERAL: alerts.append(f"GIR {GIR:.2f} mg/kg/min > {GIR_LIMIT_GENERAL}（高血糖リスク）")
+
+        ions_block=[]
+        for ion in ION_ORDER:
+            v_day = per_day_meq_total[ion]
+            ions_block.append(f"{ion:11s}: {v_day:7.2f}  ({(v_day/wt if wt>0 else 0.0):.3f})  mEq/day (mEq/kg/day)")
+        p_day = per_day_phos_mmol_total
+        ions_block.append(f"{'P (mmol/day)':11s}: {p_day:7.2f}  ({(p_day/wt if wt>0 else 0.0):.3f})  mmol/day (mmol/kg/day)")
+
+        out=[]
+        out.append("=== 概要 ===")
+        out.append(f"総流量: {total_flow_ml_h:.1f} mL/h")
+        out.append(f"WQ: {WQ:.1f} mL/kg/day")
+        out.append(f"GIR: {GIR:.3f} mg/kg/min（全ライン合算）")
+        out.append("")
+        out.append("=== 電解質（全体） ===")
+        out.append("\\n".join(ions_block))
+        out.append("")
+        out.append("=== ライン詳細 ===")
+        out.append("\\n".join(report_lines))
+        out.append("")
+        out.append("=== 栄養（全体） ===")
+        out.append(f"総kcal: {total_kcal_day:.0f} kcal/day")
+        out.append(f"脂肪: {(total_lipid_g_day/wt if wt>0 else 0.0):.2f} g/kg/day")
+        out.append("")
+        if alerts:
+            out.append("!! アラート / 配合禁忌・注意 !!")
+            for a in alerts: out.append(f" - {a}")
+        else:
+            out.append("特記アラートなし。")
+
+        set_output("\\n".join(out))
+    except Exception as e:
+        set_output(f"[例外] {e}")
+
+# 初期化とイベント接続
+def init():
+    populate_comp_options()
+    add_line()
+
+document.getElementById("add-line").onclick = create_proxy(add_line)
+document.getElementById("compute").onclick  = create_proxy(compute)
+init()
+  </script>
+</body>
+</html>
