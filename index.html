@@ -3,34 +3,48 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Peds IV Calc + Osmolarity + Rules (PyScript on GitHub Pages)</title>
+  <title>IV計算（小児/新生児）</title>
 
-  <!-- PyScript: 固定リリース（2025.7.3）。latestやunstableではなく、必ず固定版を参照する -->
+  <!-- PyScript: 固定リリース。現在運用中と同じ系を想定 -->
   <link rel="stylesheet" href="https://pyscript.net/releases/2025.7.3/core.css">
   <script type="module" src="https://pyscript.net/releases/2025.7.3/core.js"></script>
 
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+
   <style>
-    body { font-family: ui-sans-serif, -apple-system, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; margin: 16px; }
-    h1 { font-size: 1.2rem; margin: 0 0 8px; }
-    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px;}
-    input[type=number] { width: 8rem; }
+    :root { --pad: 16px; }
+    body { font-family: ui-sans-serif, -apple-system, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; margin: var(--pad); }
+    h1 { font-size: 1.15rem; margin: 0 0 8px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+    input[type=number] { width: 8.5rem; }
     select { max-width: 14rem; }
-    button { padding: 6px 10px; }
-    .line { border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin: 10px 0; background:#fafafa;}
+    button { padding: 6px 10px; border-radius: 6px; border: 1px solid #ddd; background:#f7f7f7; }
+    .line { border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin: 10px 0; background:#fafafa; }
     .line h3 { margin: 0 0 8px; font-size: 1.05rem; }
     table { width: 100%; border-collapse: collapse; margin-top: 6px; }
     th, td { border: 1px solid #e5e5e5; padding: 6px; font-size: 0.95rem; }
     th { background: #f0f0f0; }
-    .muted { color: #666; font-size: 0.9rem; }
-    #output { white-space: pre; background: #0b1020; color: #d3ffd3; padding: 12px; border-radius: 8px; overflow:auto; min-height: 240px;}
-    .btn-danger { background:#8b0000; color:#fff; }
+    .muted { color: #666; font-size: 0.92rem; }
+    #output {
+      white-space: pre-wrap;     /* ← 自動改行（改行文字は保持） */
+      word-break: break-word;
+      overflow-wrap: anywhere;   /* ← とても長い語も折り返し */
+      background: #0b1020; color: #d3ffd3;
+      padding: 12px; border-radius: 8px; min-height: 240px;
+    }
+    .btn-danger { background:#8b0000; color:#fff; border-color:#6f0000; }
+    details { border: 1px solid #eee; border-radius: 8px; padding: 8px 12px; background:#fbfbfb; }
+    details > summary { cursor: pointer; font-weight: 600; }
   </style>
 </head>
 <body>
-  <h1>小児/新生児 輸液ブレンド計算（浸透圧・配合禁忌・GIR・脂肪）— PyScript / GitHub Pages</h1>
+  <h1>IV計算（小児/新生児）</h1>
 
   <div class="row">
-    <label>体重(kg) <input id="wt" type="number" step="0.01" value="12.00"></label>
+    <label>体重(kg)
+      <!-- 初期値ブランク（placeholderのみ） -->
+      <input id="wt" type="number" step="0.01" placeholder="例: 12">
+    </label>
     <label>モード
       <select id="mode">
         <option>一般モード</option>
@@ -47,6 +61,28 @@
     <button id="compute" style="margin-left:auto;">計算</button>
   </div>
 
+  <details style="margin:10px 0;">
+    <summary>使い方（かんたん）</summary>
+    <div class="muted" style="margin-top:6px;">
+      1) 体重(kg)を入力<br>
+      2) 「ライン追加」→ 各ラインで <em>ルート</em> を選び、<em>成分行追加</em> で製品名（候補は入力補助に出る）と容量(mL)を入れる<br>
+      3) 流量 mL/h を入れて「計算」<br>
+      結果に GIR, WQ, 電解質/日, ラインの浸透圧・K濃度/速度、配合禁忌や速度/濃度のアラートが出る<br>
+      補足: 体重や流量が空のままでも計算は動く（空は0として扱う）
+    </div>
+  </details>
+
+  <details style="margin:10px 0;">
+    <summary>このページでできること</summary>
+    <div class="muted" style="margin-top:6px;">
+      ・配合禁忌チェック: Ca×P, Ca×HCO3-（禁忌）, Mg×P（注意）, 脂肪乳剤混注不可の警告<br>
+      ・Kの安全域: 濃度&gt;40 mEq/L, 速度&gt;20 mEq/h で警告（合算速度も評価）<br>
+      ・浸透圧: 末梢ルートで900 mOsm/L超で警告（AA寄与は設定で含外可）<br>
+      ・GIRとWQ: 一般>5で注意、新生児は目標8–12の範囲を評価<br>
+      ・栄養: kcal/日、脂肪 g/kg/日 の概算
+    </div>
+  </details>
+
   <div class="muted">
     末梢ルートで浸透圧 &gt; 900 mOsm/L は警告。K濃度 &gt; 40 mEq/L、K速度 &gt; 20 mEq/h は警告。Ca×P, Ca×HCO3- 禁忌、Mg×P 注意、脂肪は混注不可。
   </div>
@@ -60,7 +96,7 @@
   <h3>結果</h3>
   <div id="output">(ここに結果が出る)</div>
 
-  <!-- ここからPython本体。PyScriptの新仕様に合わせ <script type="py"> を使用 -->
+  <!-- Python本体 -->
   <script type="py">
 from __future__ import annotations
 from dataclasses import dataclass, field
@@ -68,7 +104,7 @@ from typing import Dict, List, Tuple
 from js import document
 from pyodide.ffi import create_proxy
 
-# ====== 仕様・閾値 ======
+# ====== 閾値・仕様 ======
 PERIPHERAL_OSM_LIMIT = 900.0
 GIR_LIMIT_GENERAL    = 5.0
 GIR_TARGET_NEONATE_LOW  = 8.0
@@ -111,10 +147,10 @@ class Line:
     flow_ml_h: float = 0.0
     rows: List[MixRow] = field(default_factory=list)
 
-# ---- 製剤DB（前回仕様+アスパラギン酸K/注射用水/TPN等） ----
+# ---- 製剤DB（前回仕様 + アスパラギン酸K/注射用水等） ----
 def elneopa_from_upper(name, final_ml, upper_ml, g_NaCl, g_KCl, g_NaLac, g_KH2PO4, glu_g_total, aa_g_total):
     NaCl_MW=58.44; KCl_MW=74.55; NaLac_MW=112.06; KH2PO4_MW=136.09
-    mol_NaCl = g_NaCl/NaCl_MW; mol_KCl=g_KCl/KCl_MW; mol_NaL=g_NaLac/NaLac_MW; mol_KP=g_KH2PO4/KH2PO4_MW
+    mol_NaCl=g_NaCl/NaCl_MW; mol_KCl=g_KCl/KCl_MW; mol_NaL=g_NaLac/NaLac_MW; mol_KP=g_KH2PO4/KH2PO4_MW
     meq_Na=(mol_NaCl+mol_NaL)*1000; meq_K=(mol_KCl+mol_KP)*1000; meq_Cl=(mol_NaCl+mol_KCl)*1000; meq_Lac=mol_NaL*1000
     mmol_P=mol_KP*1000
     return Component(
@@ -130,7 +166,6 @@ def build_db()->Dict[str,Component]:
     db: Dict[str,Component] = {}
     db["注射用水（溶媒）"] = Component("注射用水（溶媒）", description="電解質/糖=0。単独投与禁止（溶媒専用）")
 
-    # 晶質・糖液
     db["生理食塩液 0.9%"] = Component("生理食塩液 0.9%", elec_meq_ml={"Na":perL(154),"Cl":perL(154)}, description="Na154, Cl154 mEq/L")
     db["乳酸リンゲル"] = Component("乳酸リンゲル", elec_meq_ml={"Na":perL(130),"K":perL(4),"Ca":perL(3),"Cl":perL(109),"Lactate":perL(28)}, description="Na130,K4,Ca3,Cl109,Lac28")
     db["酢酸リンゲル（ヴィーンF相当）"] = Component("酢酸リンゲル（ヴィーンF相当）", elec_meq_ml={"Na":perL(130),"K":perL(4),"Ca":perL(3),"Cl":perL(109),"Acetate":perL(28)}, description="Na130,K4,Ca3,Cl109,Acetate28")
@@ -147,7 +182,6 @@ def build_db()->Dict[str,Component]:
     db["20%ブドウ糖"] = Component("20%ブドウ糖", glucose_g_ml=gL(200))
     db["50%ブドウ糖"] = Component("50%ブドウ糖", glucose_g_ml=gL(500))
 
-    # 補正剤
     db["KCl 1 mEq/mL（混注）"]   = Component("KCl 1 mEq/mL（混注）", elec_meq_ml={"K":1.0,"Cl":1.0}, description="K濃度≤40, 速度≤20")
     db["アスパラギン酸カリウム 1 mEq/mL"] = Component("アスパラギン酸カリウム 1 mEq/mL", elec_meq_ml={"K":1.0,"Aspartate":1.0}, description="Clを増やさずK補正")
     db["リン酸ナトリウム 10mmol/20mL"]   = Component("リン酸ナトリウム 10mmol/20mL", elec_meq_ml={"Na":0.75}, phosphate_mmol_ml=0.5, description="P10mmol/20mL, Na15mEq/20mL")
@@ -158,12 +192,10 @@ def build_db()->Dict[str,Component]:
     db["Caグルコン酸 8.5%"]     = Component("Caグルコン酸 8.5%",     elec_meq_ml={"Ca":0.39}, description="P/重炭酸と配合禁忌")
     db["MgSO4 1 mEq/mL"]         = Component("MgSO4 1 mEq/mL",         elec_meq_ml={"Mg":1.0})
 
-    # アミノ酸/脂肪
     db["アミノ酸10%（汎用）」"] = Component("アミノ酸10%（汎用）」", aa_g_ml=gL(100), description="電解質無添加想定")
     db["イントラリポス10%"] = Component("イントラリポス10%", lipid_g_ml=gL(100), kcal_per_ml_override=1.1, description="1.1 kcal/mL 等張")
     db["イントラリポス20%"] = Component("イントラリポス20%", lipid_g_ml=gL(200), kcal_per_ml_override=2.0, description="2.0 kcal/mL 等張")
 
-    # PPN/混合製剤
     def twimpal(vol):
         s=vol/500.0
         return Component(f"ツインパル {vol}mL", elec_meq_ml={"Na":(17.5*s)/vol,"K":(10*s)/vol,"Ca":(2.5*s)/vol,"Mg":(2.5*s)/vol,"Cl":(17.5*s)/vol,"Lactate":(10*s)/vol})
@@ -187,7 +219,6 @@ def build_db()->Dict[str,Component]:
         return Component(f"ビーフリード {vol}mL（混合後）", glucose_g_ml=glu, aa_g_ml=aa, elec_meq_ml=elec, phosphate_mmol_ml=pmmol)
     db["ビーフリード 500mL"]=bfluid(500); db["ビーフリード 1000mL"]=bfluid(1000)
 
-    # エルネオパ
     db["エルネオパNF1号 1000mL"] = elneopa_from_upper("エルネオパNF1号 1000mL", 1000, 492, 2.220, 0.597, 1.270, 0.688, 120.0, 20.0)
     db["エルネオパNF1号 1500mL"] = elneopa_from_upper("エルネオパNF1号 1500mL", 1500, 738, 3.330, 0.896, 1.905, 1.032, 175.0, 30.0)
     db["エルネオパNF2号 1000mL"] = elneopa_from_upper("エルネオパNF2号 1000mL", 1000, 492, 2.050, 0.746, 1.590, 0.821, 175.0, 30.0)
@@ -201,7 +232,7 @@ COMP_KEYS = list(DB.keys())
 def sum_line(line: Line) -> Tuple[float, Dict[str,float], float, float, float, float]:
     total=0.0; totals_meq:Dict[str,float]={}; glu=aa=lip=0.0; phos=0.0
     for r in line.rows:
-        comp=DB.get(r.comp_key); 
+        comp=DB.get(r.comp_key)
         if not comp or r.volume_ml<=0: continue
         v=r.volume_ml; total+=v
         glu += comp.glucose_g_ml*v; aa += comp.aa_g_ml*v; lip += comp.lipid_g_ml*v
@@ -238,17 +269,15 @@ def populate_comp_options():
     while dl.firstChild:
         dl.removeChild(dl.firstChild)
     for k in COMP_KEYS:
-        opt = document.createElement("option")
-        opt.value = k
-        dl.appendChild(opt)
+        opt = document.createElement("option"); opt.value = k; dl.appendChild(opt)
 
 _line_seq = 0
 
 def add_comp_row(tbody):
     tr = document.createElement("tr")
     td1 = document.createElement("td"); td2=document.createElement("td"); td3=document.createElement("td")
-    inp = document.createElement("input"); inp.setAttribute("type","text"); inp.setAttribute("list","comp-options"); inp.classList.add("comp")
-    vol = document.createElement("input"); vol.setAttribute("type","number"); vol.setAttribute("step","0.1"); vol.value = "100.0"; vol.classList.add("vol")
+    inp = document.createElement("input"); inp.setAttribute("type","text"); inp.setAttribute("list","comp-options"); inp.classList.add("comp"); inp.placeholder = "製品名（入力補助可）"
+    vol = document.createElement("input"); vol.setAttribute("type","number"); vol.setAttribute("step","0.1"); vol.classList.add("vol"); vol.placeholder = "例: 100.0"  /* 初期値は空 */
     btn = document.createElement("button"); btn.innerText="削除"
     def _del_row(evt):
         tr.remove()
@@ -263,24 +292,29 @@ def add_line(evt=None):
     container = document.createElement("div"); container.classList.add("line")
     title = document.createElement("h3"); title.innerText = f"Line{_line_seq}"
     hdr = document.createElement("div"); hdr.classList.add("row")
-    lab_flow = document.createElement("label"); lab_flow.innerHTML = '流量 mL/h <input class="flow" type="number" step="0.1" value="50.0">'
+    lab_flow = document.createElement("label"); 
+    lab_flow.innerHTML = '流量 mL/h <input class="flow" type="number" step="0.1" placeholder="例: 50.0">'  # 初期値は空
     lab_route = document.createElement("label"); lab_route.innerHTML = 'ルート <select class="route"><option>末梢</option><option>中心</option></select>'
     btn_add = document.createElement("button"); btn_add.innerText="成分行追加"
     btn_del = document.createElement("button"); btn_del.innerText="このラインを削除"; btn_del.classList.add("btn-danger")
     hdr.appendChild(lab_flow); hdr.appendChild(lab_route); hdr.appendChild(btn_add); hdr.appendChild(btn_del)
+
     table = document.createElement("table")
     thead = document.createElement("thead"); thead.innerHTML = "<tr><th>コンポーネント</th><th>容量 mL</th><th></th></tr>"
     tbody = document.createElement("tbody")
     table.appendChild(thead); table.appendChild(tbody)
+
     def _add_row(evt):
         add_comp_row(tbody)
     btn_add.onclick = create_proxy(_add_row)
+
     def _del_line(evt):
         container.remove()
     btn_del.onclick = create_proxy(_del_line)
+
     container.appendChild(title); container.appendChild(hdr); container.appendChild(table)
     document.getElementById("lines").appendChild(container)
-    add_comp_row(tbody)
+    add_comp_row(tbody)  # 初期行は内容空（placeholderのみ）
 
 def gather_lines()->List[Line]:
     out: List[Line] = []
@@ -290,14 +324,15 @@ def gather_lines()->List[Line]:
         if not node.classList.contains("line"): 
             continue
         name = node.querySelector("h3").innerText
-        flow = float(node.querySelector(".flow").value or "0")
+        flow = float(node.querySelector(".flow").value or "0")   # 空は0扱い
         route = node.querySelector(".route").value
         rows: List[MixRow] = []
         tb = node.querySelector("tbody")
         for j in range(tb.children.length):
             tr = tb.children.item(j)
             key = tr.querySelector(".comp").value.strip()
-            vol = float(tr.querySelector(".vol").value or "0")
+            vol_val = tr.querySelector(".vol").value
+            vol = float(vol_val or "0")  # 空は0扱い
             if key in DB and vol>0:
                 rows.append(MixRow(key, vol))
         out.append(Line(name=name, route=route, flow_ml_h=flow, rows=rows))
@@ -305,7 +340,7 @@ def gather_lines()->List[Line]:
 
 def compute(evt=None):
     try:
-        wt = float(document.getElementById("wt").value or "0")
+        wt = float(document.getElementById("wt").value or "0")  # 空は0扱い
         neonate = (document.getElementById("mode").selectedIndex == 1)
         include_aa = (document.getElementById("aa_osm").selectedIndex == 1)
         lines = gather_lines()
@@ -437,7 +472,7 @@ f"""=== {li.name} ===
 # 初期化とイベント接続
 def init():
     populate_comp_options()
-    add_line()
+    add_line()  # 初期ライン（空の行と空の流量）
 
 document.getElementById("add-line").onclick = create_proxy(add_line)
 document.getElementById("compute").onclick  = create_proxy(compute)
