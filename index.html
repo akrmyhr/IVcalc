@@ -34,6 +34,28 @@
     .btn-danger { background:#8b0000; color:#fff; border-color:#6f0000; }
     details { border: 1px solid #eee; border-radius: 8px; padding: 8px 12px; background:#fbfbfb; }
     details > summary { cursor: pointer; font-weight: 600; }
+
+    /* ===== iPhone向け：ボーラス表を縦積みカード表示にする ===== */
+    @media (max-width: 520px) {
+      /* 入力サイズを少し締める */
+      input[type=number] { width: 6.8rem; }
+      /* ボーラス表をカード化 */
+      #bolus-table thead { display: none; }
+      #bolus-table, #bolus-table tbody, #bolus-table tr, #bolus-table td { display: block; width: 100%; }
+      #bolus-table tbody tr {
+        border: 1px solid #e5e5e5; border-radius: 8px;
+        background: #fff; padding: 8px 10px; margin: 10px 0;
+      }
+      #bolus-table td { border: 0; padding: 6px 0; }
+      #bolus-table td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.8rem;
+        color: #666;
+        margin-bottom: 2px;
+      }
+      #bolus-table td.actions { text-align: right; padding-top: 4px; }
+    }
   </style>
 </head>
 <body>
@@ -60,12 +82,12 @@
   </div>
 
   <details style="margin:10px 0;">
-    <summary>使い方（かんたん）</summary>
+    <summary>使い方</summary>
     <div class="muted" style="margin-top:6px;">
-      1) 体重(kg)を入力<br>
-      2) 「ライン追加」→ 各ラインで <em>ルート</em> を選び、<em>成分行追加</em> で製品名（入力補助あり）と容量(mL)を入れる<br>
-      3) 流量 mL/h を入れて「計算」<br>
-      4) ボーラス投与は下の「ボーラス投与」で製品・容量・回数/日・投与時間(任意)・ルートを入れる
+      1) 体重(kg)<br>
+      2) 「ライン追加」→ ルート・成分・容量(mL)、流量 mL/h<br>
+      3) ボーラス投与があれば下で製品・容量・回数/日・投与時間(任意)・ルート<br>
+      出力に GIR, WQ, 電解質/日, ライン/ボーラス詳細とアラートを表示
     </div>
   </details>
 
@@ -75,8 +97,7 @@
       ・配合禁忌: Ca×P, Ca×HCO3-（禁忌）, Mg×P（注意）, 脂肪乳剤混注不可<br>
       ・Kの安全域: 濃度&gt;40 mEq/L, 速度&gt;20 mEq/h（合算速度も評価）<br>
       ・浸透圧: 末梢で900 mOsm/L超は警告（AA寄与は設定で可変）<br>
-      ・GIR/WQ と 栄養（kcal, 脂肪 g/kg/日）<br>
-      ・ボーラス寄与の合算と個別警告（末梢高浸透圧、K濃度・速度）
+      ・GIR/WQ と 栄養（kcal, 脂肪 g/kg/日）+ ボーラス寄与
     </div>
   </details>
 
@@ -96,7 +117,7 @@
     <div class="row">
       <button id="add-bolus">ボーラス行追加</button>
     </div>
-    <table>
+    <table id="bolus-table">
       <thead>
         <tr>
           <th>コンポーネント</th>
@@ -173,7 +194,7 @@ class BolusRow:
     minutes: float
     route: str
 
-# ---- DB（代表値。Na=130系は130に正規化） ----
+# ---- DB（代表値）----
 def build_db()->Dict[str,Component]:
     db: Dict[str,Component] = {}
     db["注射用水（溶媒）"] = Component("注射用水（溶媒）")
@@ -305,23 +326,35 @@ class BolusRow:
 def add_bolus_row(evt=None):
     tb = document.getElementById("bolus-tbody")
     tr = document.createElement("tr")
-    td1 = document.createElement("td")
+
+    # comp
+    td1 = document.createElement("td"); td1.setAttribute("data-label","コンポーネント")
     comp = document.createElement("input"); comp.setAttribute("type","text"); comp.setAttribute("list","comp-options"); comp.classList.add("b-comp"); comp.placeholder="製品名"
     td1.appendChild(comp)
-    td2 = document.createElement("td")
+
+    # vol
+    td2 = document.createElement("td"); td2.setAttribute("data-label","容量 mL")
     vol = document.createElement("input"); vol.setAttribute("type","number"); vol.setAttribute("step","0.1"); vol.classList.add("b-vol"); vol.placeholder="例: 20"
     td2.appendChild(vol)
-    td3 = document.createElement("td")
+
+    # count/day
+    td3 = document.createElement("td"); td3.setAttribute("data-label","回数/日")
     cnt = document.createElement("input"); cnt.setAttribute("type","number"); cnt.setAttribute("step","1"); cnt.classList.add("b-cnt"); cnt.placeholder="1"
     td3.appendChild(cnt)
-    td4 = document.createElement("td")
+
+    # minutes
+    td4 = document.createElement("td"); td4.setAttribute("data-label","投与時間(分)")
     mins = document.createElement("input"); mins.setAttribute("type","number"); mins.setAttribute("step","1"); mins.classList.add("b-min"); mins.placeholder="例: 30"
     td4.appendChild(mins)
-    td5 = document.createElement("td")
+
+    # route
+    td5 = document.createElement("td"); td5.setAttribute("data-label","ルート")
     route = document.createElement("select"); route.classList.add("b-route")
     route.innerHTML = '<option>末梢</option><option>中心</option>'
     td5.appendChild(route)
-    td6 = document.createElement("td")
+
+    # delete
+    td6 = document.createElement("td"); td6.classList.add("actions")
     btn = document.createElement("button"); btn.innerText="削除"
     def _del(evt): tr.remove()
     btn.onclick = create_proxy(_del)
@@ -456,8 +489,7 @@ f"""=== {li.name} ===
                 total_glu_g_day += (glu_g/total_ml)*vol_day_ml
 
         # --- ボーラス側 ---
-        bolus_rows = gather_bolus()
-        for i, b in enumerate(bolus_rows, start=1):
+        for i, b in enumerate(bolus, start=1):
             comp = DB[b.comp_key]
             dose_meq = {ion: comp.elec_meq_ml.get(ion,0.0)*b.volume_ml for ion in ION_ORDER}
             dose_p   = comp.phosphate_mmol_ml*b.volume_ml
@@ -515,15 +547,15 @@ f"""=== {li.name} ===
         out.append(f"GIR: {GIR:.3f} mg/kg/min（点滴+ボーラス合算）")
         out.append("")
         out.append("=== 電解質（全体） ===")
-        out.append("\n".join(ions_block))             # ← ここを \n に
+        out.append("\n".join(ions_block))
         out.append("")
         if report_lines:
             out.append("=== ライン詳細 ===")
-            out.append("\n".join(report_lines))       # ← ここを \n に
+            out.append("\n".join(report_lines))
             out.append("")
         if report_bolus:
             out.append("=== ボーラス詳細 ===")
-            out.append("\n".join(report_bolus))       # ← ここを \n に
+            out.append("\n".join(report_bolus))
             out.append("")
         out.append("=== 栄養（全体） ===")
         out.append(f"総kcal: {total_kcal_day:.0f} kcal/day")
@@ -535,7 +567,7 @@ f"""=== {li.name} ===
         else:
             out.append("特記アラートなし。")
 
-        set_output("\n".join(out))                    # ← ここを \n に
+        set_output("\n".join(out))
     except Exception as e:
         set_output(f"[例外] {e}")
 
@@ -551,4 +583,6 @@ document.getElementById("compute").onclick  = create_proxy(compute)
 init()
   </script>
 </body>
+</html>
+
 </html>
