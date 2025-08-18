@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>IV計算（小児/新生児）</title>
 
-  <!-- PyScript: 固定リリース。現在運用中と同じ系を想定 -->
+  <!-- PyScript（固定版）。運用中のバージョンに合わせて必要なら差し替え可 -->
   <link rel="stylesheet" href="https://pyscript.net/releases/2025.7.3/core.css">
   <script type="module" src="https://pyscript.net/releases/2025.7.3/core.js"></script>
 
@@ -25,10 +25,10 @@
     th, td { border: 1px solid #e5e5e5; padding: 6px; font-size: 0.95rem; }
     th { background: #f0f0f0; }
     .muted { color: #666; font-size: 0.92rem; }
-    #output {
-      white-space: pre-wrap;     /* ← 自動改行（改行文字は保持） */
+    #output{
+      white-space: pre-wrap;     /* 改行文字は保持しつつ自動折返し */
       word-break: break-word;
-      overflow-wrap: anywhere;   /* ← とても長い語も折り返し */
+      overflow-wrap: anywhere;   /* すごく長い語も折返し */
       background: #0b1020; color: #d3ffd3;
       padding: 12px; border-radius: 8px; min-height: 240px;
     }
@@ -78,7 +78,7 @@
       ・配合禁忌チェック: Ca×P, Ca×HCO3-（禁忌）, Mg×P（注意）, 脂肪乳剤混注不可の警告<br>
       ・Kの安全域: 濃度&gt;40 mEq/L, 速度&gt;20 mEq/h で警告（合算速度も評価）<br>
       ・浸透圧: 末梢ルートで900 mOsm/L超で警告（AA寄与は設定で含外可）<br>
-      ・GIRとWQ: 一般>5で注意、新生児は目標8–12の範囲を評価<br>
+      ・GIRとWQ: 一般&gt;5で注意、新生児は目標8–12の範囲を評価<br>
       ・栄養: kcal/日、脂肪 g/kg/日 の概算
     </div>
   </details>
@@ -96,7 +96,7 @@
   <h3>結果</h3>
   <div id="output">(ここに結果が出る)</div>
 
-  <!-- Python本体 -->
+  <!-- Python本体（PyScript） -->
   <script type="py">
 from __future__ import annotations
 from dataclasses import dataclass, field
@@ -147,7 +147,7 @@ class Line:
     flow_ml_h: float = 0.0
     rows: List[MixRow] = field(default_factory=list)
 
-# ---- 製剤DB（前回仕様 + アスパラギン酸K/注射用水等） ----
+# ---- 製剤DB ----
 def elneopa_from_upper(name, final_ml, upper_ml, g_NaCl, g_KCl, g_NaLac, g_KH2PO4, glu_g_total, aa_g_total):
     NaCl_MW=58.44; KCl_MW=74.55; NaLac_MW=112.06; KH2PO4_MW=136.09
     mol_NaCl=g_NaCl/NaCl_MW; mol_KCl=g_KCl/KCl_MW; mol_NaL=g_NaLac/NaLac_MW; mol_KP=g_KH2PO4/KH2PO4_MW
@@ -277,7 +277,7 @@ def add_comp_row(tbody):
     tr = document.createElement("tr")
     td1 = document.createElement("td"); td2=document.createElement("td"); td3=document.createElement("td")
     inp = document.createElement("input"); inp.setAttribute("type","text"); inp.setAttribute("list","comp-options"); inp.classList.add("comp"); inp.placeholder = "製品名（入力補助可）"
-    vol = document.createElement("input"); vol.setAttribute("type","number"); vol.setAttribute("step","0.1"); vol.classList.add("vol"); vol.placeholder = "例: 100.0"  /* 初期値は空 */
+    vol = document.createElement("input"); vol.setAttribute("type","number"); vol.setAttribute("step","0.1"); vol.classList.add("vol"); vol.placeholder = "例: 100.0"  # 初期値は空（placeholderのみ）
     btn = document.createElement("button"); btn.innerText="削除"
     def _del_row(evt):
         tr.remove()
@@ -292,7 +292,7 @@ def add_line(evt=None):
     container = document.createElement("div"); container.classList.add("line")
     title = document.createElement("h3"); title.innerText = f"Line{_line_seq}"
     hdr = document.createElement("div"); hdr.classList.add("row")
-    lab_flow = document.createElement("label"); 
+    lab_flow = document.createElement("label")
     lab_flow.innerHTML = '流量 mL/h <input class="flow" type="number" step="0.1" placeholder="例: 50.0">'  # 初期値は空
     lab_route = document.createElement("label"); lab_route.innerHTML = 'ルート <select class="route"><option>末梢</option><option>中心</option></select>'
     btn_add = document.createElement("button"); btn_add.innerText="成分行追加"
@@ -314,7 +314,7 @@ def add_line(evt=None):
 
     container.appendChild(title); container.appendChild(hdr); container.appendChild(table)
     document.getElementById("lines").appendChild(container)
-    add_comp_row(tbody)  # 初期行は内容空（placeholderのみ）
+    add_comp_row(tbody)  # 初期行は空（placeholderのみ）
 
 def gather_lines()->List[Line]:
     out: List[Line] = []
@@ -472,7 +472,7 @@ f"""=== {li.name} ===
 # 初期化とイベント接続
 def init():
     populate_comp_options()
-    add_line()  # 初期ライン（空の行と空の流量）
+    add_line()  # 初期ライン（空）
 
 document.getElementById("add-line").onclick = create_proxy(add_line)
 document.getElementById("compute").onclick  = create_proxy(compute)
