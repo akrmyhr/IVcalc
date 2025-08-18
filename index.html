@@ -63,26 +63,25 @@
     <summary>使い方（かんたん）</summary>
     <div class="muted" style="margin-top:6px;">
       1) 体重(kg)を入力<br>
-      2) 「ライン追加」→ 各ラインで <em>ルート</em> を選び、<em>成分行追加</em> で製品名（候補は入力補助に出る）と容量(mL)を入れる<br>
+      2) 「ライン追加」→ 各ラインで <em>ルート</em> を選び、<em>成分行追加</em> で製品名（入力補助あり）と容量(mL)を入れる<br>
       3) 流量 mL/h を入れて「計算」<br>
-      4) ボーラス投与がある場合は、下の「ボーラス投与」で製品・容量・回数/日・投与時間(任意)・ルートを入れる<br>
-      結果に GIR, WQ, 電解質/日, ラインの浸透圧・K濃度/速度、ボーラスの寄与と警告が出る。
+      4) ボーラス投与は下の「ボーラス投与」で製品・容量・回数/日・投与時間(任意)・ルートを入れる
     </div>
   </details>
 
   <details style="margin:10px 0;">
     <summary>このページでできること</summary>
     <div class="muted" style="margin-top:6px;">
-      ・配合禁忌チェック: Ca×P, Ca×HCO3-（禁忌）, Mg×P（注意）, 脂肪乳剤混注不可の警告<br>
-      ・Kの安全域: 濃度&gt;40 mEq/L, 速度&gt;20 mEq/h で警告（合算速度も評価）<br>
-      ・浸透圧: 末梢ルートで900 mOsm/L超で警告（AA寄与は設定で含外可）<br>
-      ・GIRとWQ: 一般&gt;5で注意、新生児は目標8–12の範囲を評価<br>
-      ・栄養: kcal/日、脂肪 g/kg/日 の概算 + **ボーラス寄与**を合算
+      ・配合禁忌: Ca×P, Ca×HCO3-（禁忌）, Mg×P（注意）, 脂肪乳剤混注不可<br>
+      ・Kの安全域: 濃度&gt;40 mEq/L, 速度&gt;20 mEq/h（合算速度も評価）<br>
+      ・浸透圧: 末梢で900 mOsm/L超は警告（AA寄与は設定で可変）<br>
+      ・GIR/WQ と 栄養（kcal, 脂肪 g/kg/日）<br>
+      ・ボーラス寄与の合算と個別警告（末梢高浸透圧、K濃度・速度）
     </div>
   </details>
 
   <div class="muted">
-    末梢ルートで浸透圧 &gt; 900 mOsm/L は警告。K濃度 &gt; 40 mEq/L、K速度 &gt; 20 mEq/h は警告。Ca×P, Ca×HCO3- 禁忌、Mg×P 注意、脂肪は混注不可。
+    末梢で浸透圧&gt;900 mOsm/Lは警告。K濃度&gt;40 mEq/L、K速度&gt;20 mEq/hは警告。Ca×P, Ca×HCO3-禁忌、Mg×P注意、脂肪は混注不可。
   </div>
 
   <!-- コンポーネント候補（Pythonが埋める） -->
@@ -174,26 +173,11 @@ class BolusRow:
     minutes: float
     route: str
 
-# ---- 製剤DB（PDFの値に合わせ調整：Na130系は130に正規化） ----
-def elneopa_from_upper(name, final_ml, upper_ml, g_NaCl, g_KCl, g_NaLac, g_KH2PO4, glu_g_total, aa_g_total):
-    NaCl_MW=58.44; KCl_MW=74.55; NaLac_MW=112.06; KH2PO4_MW=136.09
-    mol_NaCl=g_NaCl/NaCl_MW; mol_KCl=g_KCl/KCl_MW; mol_NaL=g_NaLac/NaLac_MW; mol_KP=g_KH2PO4/KH2PO4_MW
-    meq_Na=(mol_NaCl+mol_NaL)*1000; meq_K=(mol_KCl+mol_KP)*1000; meq_Cl=(mol_NaCl+mol_KCl)*1000; meq_Lac=mol_NaL*1000
-    mmol_P=mol_KP*1000
-    return Component(
-        name=name,
-        glucose_g_ml=glu_g_total/final_ml,
-        aa_g_ml=aa_g_total/final_ml,
-        elec_meq_ml={"Na":meq_Na/final_ml,"K":meq_K/final_ml,"Cl":meq_Cl/final_ml,"Lactate":meq_Lac/final_ml},
-        phosphate_mmol_ml=mmol_P/final_ml,
-        description=f"混合後{final_ml}mL（上室{upper_ml}mL由来）"
-    )
-
+# ---- DB（代表値。Na=130系は130に正規化） ----
 def build_db()->Dict[str,Component]:
     db: Dict[str,Component] = {}
-    db["注射用水（溶媒）"] = Component("注射用水（溶媒）", description="電解質/糖=0。単独投与禁止（溶媒専用）")
+    db["注射用水（溶媒）"] = Component("注射用水（溶媒）")
 
-    # 晶質・糖液
     db["生理食塩液 0.9%"] = Component("生理食塩液 0.9%", elec_meq_ml={"Na":perL(154),"Cl":perL(154)})
     db["乳酸リンゲル"] = Component("乳酸リンゲル", elec_meq_ml={"Na":perL(130),"K":perL(4),"Ca":perL(3),"Cl":perL(109),"Lactate":perL(28)})
     db["酢酸リンゲル（ヴィーンF相当）"] = Component("酢酸リンゲル（ヴィーンF相当）", elec_meq_ml={"Na":perL(130),"K":perL(4),"Ca":perL(3),"Cl":perL(109),"Acetate":perL(28)})
@@ -204,28 +188,22 @@ def build_db()->Dict[str,Component]:
     db["ソリタT3"]  = Component("ソリタT3",  glucose_g_ml=gL(43), elec_meq_ml={"Na":perL(35),"K":perL(20),"Cl":perL(35),"Lactate":perL(20)})
     db["ソリタT3G"] = Component("ソリタT3G", glucose_g_ml=gL(75), elec_meq_ml={"Na":perL(35),"K":perL(20),"Cl":perL(35),"Lactate":perL(20)})
 
-    # ブドウ糖単独
     db["G5"]  = Component("G5",  glucose_g_ml=gL(50))
     db["G10"] = Component("G10", glucose_g_ml=gL(100))
     db["G20"] = Component("G20", glucose_g_ml=gL(200))
     db["G50"] = Component("G50", glucose_g_ml=gL(500))
 
-    # 補正剤（注：本2PDFの対象外。添文既定値）
+    # 代表的添加薬（添文値）
     db["KCl 1 mEq/mL（混注）」"] = Component("KCl 1 mEq/mL（混注）」", elec_meq_ml={"K":1.0,"Cl":1.0})
     db["リン酸Na 10mmol/20mL」"] = Component("リン酸Na 10mmol/20mL」", elec_meq_ml={"Na":0.75}, phosphate_mmol_ml=0.5)
     db["リン酸K 10mmol/20mL」"]  = Component("リン酸K 10mmol/20mL」",  elec_meq_ml={"K":1.0},  phosphate_mmol_ml=0.5)
     db["重炭酸Na 8.4%」"]       = Component("重炭酸Na 8.4%」", elec_meq_ml={"Na":1.0,"Bicarbonate":1.0})
     db["Caグルコン酸 8.5%」"]    = Component("Caグルコン酸 8.5%」", elec_meq_ml={"Ca":0.39})
     db["MgSO4 1 mEq/mL」"]       = Component("MgSO4 1 mEq/mL」", elec_meq_ml={"Mg":1.0})
-
-    # 脂肪・AA（熱量密度は添文に準拠）
     db["アミノ酸10%（汎用）」"] = Component("アミノ酸10%（汎用）」", aa_g_ml=gL(100))
     db["イントラリポス10%」"] = Component("イントラリポス10%」", lipid_g_ml=gL(100), kcal_per_ml_override=1.1)
     db["イントラリポス20%」"] = Component("イントラリポス20%」", lipid_g_ml=gL(200), kcal_per_ml_override=2.0)
 
-    # 例：PPN/TPN混合（必要に応じ利用）
-    db["エルネオパNF1号 1000mL"] = elneopa_from_upper("エルネオパNF1号 1000mL", 1000, 492, 2.220, 0.597, 1.270, 0.688, 120.0, 20.0)
-    db["エルネオパNF2号 1000mL"] = elneopa_from_upper("エルネオパNF2号 1000mL", 1000, 492, 2.050, 0.746, 1.590, 0.821, 175.0, 30.0)
     return db
 
 DB: Dict[str,Component] = build_db()
@@ -316,31 +294,33 @@ def add_line(evt=None):
     add_comp_row(tbody)
 
 # ---- ボーラス ----
+@dataclass
+class BolusRow:
+    comp_key: str
+    volume_ml: float
+    count_per_day: int
+    minutes: float
+    route: str
+
 def add_bolus_row(evt=None):
     tb = document.getElementById("bolus-tbody")
     tr = document.createElement("tr")
-    # comp
     td1 = document.createElement("td")
     comp = document.createElement("input"); comp.setAttribute("type","text"); comp.setAttribute("list","comp-options"); comp.classList.add("b-comp"); comp.placeholder="製品名"
     td1.appendChild(comp)
-    # vol
     td2 = document.createElement("td")
     vol = document.createElement("input"); vol.setAttribute("type","number"); vol.setAttribute("step","0.1"); vol.classList.add("b-vol"); vol.placeholder="例: 20"
     td2.appendChild(vol)
-    # count/day
     td3 = document.createElement("td")
     cnt = document.createElement("input"); cnt.setAttribute("type","number"); cnt.setAttribute("step","1"); cnt.classList.add("b-cnt"); cnt.placeholder="1"
     td3.appendChild(cnt)
-    # minutes
     td4 = document.createElement("td")
     mins = document.createElement("input"); mins.setAttribute("type","number"); mins.setAttribute("step","1"); mins.classList.add("b-min"); mins.placeholder="例: 30"
     td4.appendChild(mins)
-    # route
     td5 = document.createElement("td")
     route = document.createElement("select"); route.classList.add("b-route")
     route.innerHTML = '<option>末梢</option><option>中心</option>'
     td5.appendChild(route)
-    # delete
     td6 = document.createElement("td")
     btn = document.createElement("button"); btn.innerText="削除"
     def _del(evt): tr.remove()
@@ -476,44 +456,37 @@ f"""=== {li.name} ===
                 total_glu_g_day += (glu_g/total_ml)*vol_day_ml
 
         # --- ボーラス側 ---
-        for i, b in enumerate(bolus, start=1):
+        bolus_rows = gather_bolus()
+        for i, b in enumerate(bolus_rows, start=1):
             comp = DB[b.comp_key]
-            # 1回量
             dose_meq = {ion: comp.elec_meq_ml.get(ion,0.0)*b.volume_ml for ion in ION_ORDER}
             dose_p   = comp.phosphate_mmol_ml*b.volume_ml
             dose_glu = comp.glucose_g_ml*b.volume_ml
             dose_aa  = comp.aa_g_ml*b.volume_ml
             dose_fat = comp.lipid_g_ml*b.volume_ml
-            # 日量（回数で掛ける）
+
             for ion,v in dose_meq.items():
                 per_day_meq_total[ion] += v * b.count_per_day
             per_day_phos_mmol_total += dose_p * b.count_per_day
             total_glu_g_day += dose_glu * b.count_per_day
-            # 熱量・脂肪
             total_kcal_day += (comp.kcal_per_ml() * b.volume_ml) * b.count_per_day
             total_lipid_g_day += dose_fat * b.count_per_day
 
-            # K速度（投与時間が入っていれば）
             if b.minutes>0:
                 rate_meq_h = (dose_meq.get("K",0.0)) / (b.minutes/60.0)
                 if rate_meq_h > KCL_MAX_RATE:
                     alerts.append(f"[ボーラス#{i}] K投与速度 {rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
-            # K濃度（製剤原液のmEq/L）
             k_conc = comp.elec_meq_ml.get("K",0.0)*1000.0
             if b.route=="末梢" and k_conc > KCL_MAX_CONC:
                 alerts.append(f"[ボーラス#{i}] K濃度 {k_conc:.0f} mEq/L > {KCL_MAX_CONC}（末梢）")
-            # 末梢浸透圧（単剤）
             tot_elec = {ion: dose_meq.get(ion,0.0) for ion in ION_ORDER}
             osm = osmolarity(b.volume_ml, tot_elec, dose_glu, dose_p, dose_aa, include_aa=False)
             if b.route=="末梢" and osm>PERIPHERAL_OSM_LIMIT:
                 alerts.append(f"[ボーラス#{i}] 浸透圧 {osm:.0f} mOsm/L > {PERIPHERAL_OSM_LIMIT}（末梢）")
-            # 脂肪のボーラスは注意喚起
             if comp.lipid_g_ml>0:
                 alerts.append(f"[ボーラス#{i}] 脂肪乳剤はボーラス不適（緩徐投与を検討）")
 
-            report_bolus.append(
-f"- #{i} {b.comp_key}  {b.volume_ml:.1f} mL × {b.count_per_day}/日, ルート:{b.route}"
-            )
+            report_bolus.append(f"- #{i} {b.comp_key}  {b.volume_ml:.1f} mL × {b.count_per_day}/日, ルート:{b.route}")
 
         # --- 指標 ---
         WQ  = (total_flow_ml_h*24.0)/wt if wt>0 else 0.0
@@ -542,15 +515,15 @@ f"- #{i} {b.comp_key}  {b.volume_ml:.1f} mL × {b.count_per_day}/日, ルート:
         out.append(f"GIR: {GIR:.3f} mg/kg/min（点滴+ボーラス合算）")
         out.append("")
         out.append("=== 電解質（全体） ===")
-        out.append("\\n".join(ions_block))
+        out.append("\n".join(ions_block))             # ← ここを \n に
         out.append("")
         if report_lines:
             out.append("=== ライン詳細 ===")
-            out.append("\\n".join(report_lines))
+            out.append("\n".join(report_lines))       # ← ここを \n に
             out.append("")
         if report_bolus:
             out.append("=== ボーラス詳細 ===")
-            out.append("\\n".join(report_bolus))
+            out.append("\n".join(report_bolus))       # ← ここを \n に
             out.append("")
         out.append("=== 栄養（全体） ===")
         out.append(f"総kcal: {total_kcal_day:.0f} kcal/day")
@@ -562,7 +535,7 @@ f"- #{i} {b.comp_key}  {b.volume_ml:.1f} mL × {b.count_per_day}/日, ルート:
         else:
             out.append("特記アラートなし。")
 
-        set_output("\\n".join(out))
+        set_output("\n".join(out))                    # ← ここを \n に
     except Exception as e:
         set_output(f"[例外] {e}")
 
