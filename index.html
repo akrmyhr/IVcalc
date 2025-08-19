@@ -24,7 +24,7 @@
     .btn-primary { background:#2563eb; color:#fff; border-color:#1d4ed8; font-weight:600; }
     .btn-primary.big { font-size:1.05rem; padding:10px 16px; border-radius:10px; }
     .line, .box { border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin: 10px 0; background:#fafafa; }
-    .box { overflow: hidden; } /* ← 内側カードのはみ出しをクリップ */
+    .box { overflow: hidden; }
     .line h3 { margin: 0 0 8px; font-size: 1.05rem; }
     table { width: 100%; border-collapse: collapse; margin-top: 6px; }
     th, td { border: 1px solid #e5e5e5; padding: 6px; font-size: 0.95rem; }
@@ -47,7 +47,7 @@
       position: sticky; top: 0; z-index: 20;
       background: #fff; padding: 8px; margin-top: 8px;
       border: 1px solid #e5e5e5; border-radius: 10px;
-      display: flex; gap: 8px; align-items: center; justify-content: center; /* ← 中央配置 */
+      display: flex; gap: 8px; align-items: center; justify-content: center;
       box-shadow: 0 2px 10px rgba(0,0,0,.06);
     }
     .compute-bar .muted { margin-left: 6px; }
@@ -57,7 +57,6 @@
     @media (max-width: 520px) {
       input[type=number] { width: 6.8rem; }
 
-      /* テーブルをカード化 */
       #bolus-table thead { display: none; }
       #bolus-table, #bolus-table tbody, #bolus-table tr, #bolus-table td { display: block; width: 100%; border: 0; }
       #bolus-table tbody tr {
@@ -65,7 +64,7 @@
         border: 1px solid #e5e5e5;
         border-radius: 10px;
         padding: 10px 12px;
-        margin: 10px 0;          /* ← 親の丸角内に収まる余白 */
+        margin: 10px 0;
       }
       #bolus-table td { padding: 6px 0; }
       #bolus-table td::before {
@@ -132,7 +131,7 @@
           <tbody>
             <tr><th style="width:14rem;">GIR</th><td>GIR (mg/kg/min) = 総ブドウ糖[g/日] × 1000 / (体重[kg] × 1440)</td></tr>
             <tr><th>WQ</th><td>WQ (mL/kg/day) = 総流量[mL/h] × 24 / 体重[kg]</td></tr>
-            <tr><th>理論浸透圧</th><td>mOsm/L = Σ(各イオンの mmol/L) + P[mmol/L] + Glucose[mmol/L] + （AA寄与 9×AA[g/L], 任意）<br>※ mEq→mmol 変換: mmol = mEq / |z|（Na, K, Cl, HCO₃, 乳酸, 酢酸=1、Ca, Mg=2、クエン酸=3, 硫酸=2）</td></tr>
+            <tr><th>理論浸透圧</th><td>mOsm/L = Σ(各イオンの mmol/L) + P[mmol/L] + Glucose[mmol/L] + （AA寄与 9×AA[g/L], 任意）<br>※ mEq→mmol 変換: mmol = mEq / |z|（Na, K, Cl, HCO₃, 乳酸, 酢酸, グルコン酸=1、Ca, Mg=2、クエン酸=3, 硫酸=2）</td></tr>
             <tr><th>熱量</th><td>Glucose・AA 4 kcal/g、脂肪 9 kcal/g（脂肪は添文のkcal/mLを優先）</td></tr>
           </tbody>
         </table>
@@ -144,23 +143,24 @@
         <table>
           <thead>
             <tr>
-              <th>製剤</th><th>Na</th><th>K</th><th>Ca</th><th>Mg</th><th>Cl</th><th>乳酸</th><th>酢酸</th><th>P (mmol/L)</th><th>ブドウ糖 (g/L)</th>
+              <th>製剤</th><th>Na</th><th>K</th><th>Ca</th><th>Mg</th><th>Cl</th><th>乳酸</th><th>酢酸</th><th>グルコン酸</th><th>P (mmol/L)</th><th>ブドウ糖 (g/L)</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>生理食塩液 0.9%</td><td>154</td><td>–</td><td>–</td><td>–</td><td>154</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
-            <tr><td>乳酸リンゲル</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>28</td><td>–</td><td>–</td><td>–</td></tr>
-            <tr><td>酢酸リンゲル（ヴィーンF相当）</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>–</td><td>28</td><td>–</td><td>–</td></tr>
-            <tr><td>酢酸リンゲル＋Glu5%（ヴィーンD相当）</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>–</td><td>28</td><td>–</td><td><b>50</b></td></tr>
-            <tr><td>ソリタT1</td><td>90</td><td>–</td><td>–</td><td>–</td><td>70</td><td>20</td><td>–</td><td>–</td><td><b>26</b></td></tr>
+            <tr><td>生理食塩液 0.9%</td><td>154</td><td>–</td><td>–</td><td>–</td><td>154</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+            <tr><td>乳酸リンゲル</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>28</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+            <tr><td>酢酸リンゲル（ヴィーンF相当）</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>–</td><td>28</td><td>–</td><td>–</td><td>–</td></tr>
+            <tr><td>酢酸リンゲル＋Glu5%（ヴィーンD相当）</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>–</td><td>28</td><td>–</td><td>–</td><td><b>50</b></td></tr>
+            <tr><td>ソリタT1</td><td>90</td><td>–</td><td>–</td><td>–</td><td>70</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>26</b></td></tr>
             <tr><td>ソリタT2</td><td>84</td><td>20</td><td>–</td><td>–</td><td>66</td><td>20</td><td>–</td><td><b>10</b></td><td><b>32</b></td></tr>
-            <tr><td>ソリタT3</td><td>35</td><td>20</td><td>–</td><td>–</td><td>35</td><td>20</td><td>–</td><td>–</td><td><b>43</b></td></tr>
-            <tr><td>ソリタT3G</td><td>35</td><td>20</td><td>–</td><td>–</td><td>35</td><td>20</td><td>–</td><td>–</td><td><b>75</b></td></tr>
-            <tr><td>G5</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>50</b></td></tr>
-            <tr><td>G10</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>100</b></td></tr>
-            <tr><td>G20</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>200</b></td></tr>
-            <tr><td>G50</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>500</b></td></tr>
-            <tr><td>注射用水（溶媒）</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+            <tr><td>ソリタT3</td><td>35</td><td>20</td><td>–</td><td>–</td><td>35</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>43</b></td></tr>
+            <tr><td>ソリタT3G</td><td>35</td><td>20</td><td>–</td><td>–</td><td>35</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>75</b></td></tr>
+            <tr><td><b>フィジオ35輸液</b></td><td><b>35</b></td><td><b>20</b></td><td><b>5</b></td><td><b>3</b></td><td><b>28</b></td><td>–</td><td><b>20</b></td><td><b>5</b></td><td><b>10</b></td><td><b>100</b></td></tr>
+            <tr><td>G5</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>50</b></td></tr>
+            <tr><td>G10</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>100</b></td></tr>
+            <tr><td>G20</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>200</b></td></tr>
+            <tr><td>G50</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>500</b></td></tr>
+            <tr><td>注射用水（溶媒）</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
           </tbody>
         </table>
       </div>
@@ -179,6 +179,7 @@
             <tr><td>重炭酸Na 8.4%</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td></tr>
             <tr><td>Caグルコン酸 8.5%</td><td>–</td><td>–</td><td><b>0.39</b></td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
             <tr><td>MgSO₄ 1 mEq/mL</td><td>–</td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td></tr>
+            <tr><td><b>10%塩化ナトリウム注</b></td><td><b>1.71</b></td><td>–</td><td>–</td><td>–</td><td><b>1.71</b></td><td>–</td><td>–</td></tr>
           </tbody>
         </table>
       </div>
@@ -192,6 +193,7 @@
           </thead>
           <tbody>
             <tr><td>アミノ酸10%（汎用）</td><td><b>100</b></td><td>–</td><td>約0.4</td><td>電解質無添加想定（4 kcal/gで算出）</td></tr>
+            <tr><td><b>プレアミンP 7.6%</b></td><td><b>76</b></td><td>–</td><td>約0.30</td><td>小児用AA製剤</td></tr>
             <tr><td>イントラリポス10%</td><td>–</td><td><b>100</b></td><td><b>1.1</b></td><td>添文の熱量密度</td></tr>
             <tr><td>イントラリポス20%</td><td>–</td><td><b>200</b></td><td><b>2.0</b></td><td>添文の熱量密度</td></tr>
           </tbody>
@@ -202,11 +204,11 @@
         <b>出典リンク</b><br>
         ・<a href="https://www.yueki.com/files/composition_search/water_electrolyte.pdf" target="_blank" rel="noopener">水・電解質製剤 組成表（yueki.com）</a><br>
         ・<a href="https://www.yueki.com/files/composition_search/nutrition.pdf" target="_blank" rel="noopener">栄養（糖・アミノ酸・脂肪乳剤等）組成表（yueki.com）</a><br>
-        ・添加薬（KCl, リン酸Na/K, 重炭酸Na, Caグルコン酸, MgSO₄）のmEq/mL・mmol/mLは各製剤の添付文書の標準値に準拠
+        ・10%食塩水・プレアミンP・フィジオ35輸液は各製品の添付文書/資料の標準値を使用
       </div>
 
       <div class="muted" style="margin-top:8px;">
-        注: 酢酸リンゲルのNaは製品により130–131 mEq/Lの差があるため、内部DBでは130に正規化。糖量(g/L)はPDFのg/容器を体積で割って換算。
+        注: 酢酸リンゲルのNaは製品により130–131 mEq/Lの差があるため、内部DBでは130に正規化。糖量(g/L)はg/容器を体積で割って換算。グルコン酸は1価アニオンとして扱う。
       </div>
     </div>
   </details>
@@ -269,8 +271,9 @@ KCL_MAX_RATE = 20.0
 AA_OSM_PER_G = 9.0
 MW = {"GLUCOSE": 180.156}
 
-ION_ORDER = ["Na","K","Cl","Ca","Mg","Lactate","Acetate","Citrate","Sulfate","Bicarbonate","Aspartate"]
-VALENCE   = {"Na":1,"K":1,"Cl":1,"Bicarbonate":1,"Lactate":1,"Acetate":1,"Ca":2,"Mg":2,"Citrate":3,"Sulfate":2,"Aspartate":1}
+# 追加: Gluconate を1価アニオンとして扱う
+ION_ORDER = ["Na","K","Cl","Ca","Mg","Lactate","Acetate","Gluconate","Citrate","Sulfate","Bicarbonate","Aspartate"]
+VALENCE   = {"Na":1,"K":1,"Cl":1,"Bicarbonate":1,"Lactate":1,"Acetate":1,"Gluconate":1,"Ca":2,"Mg":2,"Citrate":3,"Sulfate":2,"Aspartate":1}
 
 def perL(x): return x/1000.0
 def gL(x):  return x/1000.0
@@ -330,16 +333,27 @@ def build_db()->Dict[str,Component]:
     db["G20"] = Component("G20", glucose_g_ml=gL(200))
     db["G50"] = Component("G50", glucose_g_ml=gL(500))
 
-    # 代表的添加薬（添文値）
+    # 添加薬
     db["KCl 1 mEq/mL（混注）」"] = Component("KCl 1 mEq/mL（混注）」", elec_meq_ml={"K":1.0,"Cl":1.0})
     db["リン酸Na 10mmol/20mL」"] = Component("リン酸Na 10mmol/20mL」", elec_meq_ml={"Na":0.75}, phosphate_mmol_ml=0.5)
     db["リン酸K 10mmol/20mL」"]  = Component("リン酸K 10mmol/20mL」",  elec_meq_ml={"K":1.0},  phosphate_mmol_ml=0.5)
     db["重炭酸Na 8.4%」"]       = Component("重炭酸Na 8.4%」", elec_meq_ml={"Na":1.0,"Bicarbonate":1.0})
     db["Caグルコン酸 8.5%」"]    = Component("Caグルコン酸 8.5%」", elec_meq_ml={"Ca":0.39})
     db["MgSO4 1 mEq/mL」"]       = Component("MgSO4 1 mEq/mL」", elec_meq_ml={"Mg":1.0})
+    db["10%塩化ナトリウム注」"] = Component("10%塩化ナトリウム注」", elec_meq_ml={"Na":1.71,"Cl":1.71})
+
+    # 新規：フィジオ35輸液（グルコン酸を明示）
+    db["フィジオ35輸液"] = Component(
+        "フィジオ35輸液",
+        glucose_g_ml=gL(100),
+        elec_meq_ml={"Na":perL(35),"K":perL(20),"Ca":perL(5),"Mg":perL(3),"Cl":perL(28),"Acetate":perL(20),"Gluconate":perL(5)},
+        phosphate_mmol_ml=mmolL(10),
+        description="Na35,K20,Ca5,Mg3,Cl28,Acetate20,Gluconate5,P10,Glucose10%"
+    )
 
     # 栄養
     db["アミノ酸10%（汎用）」"] = Component("アミノ酸10%（汎用）」", aa_g_ml=gL(100))
+    db["プレアミンP 7.6%」"]   = Component("プレアミンP 7.6%」",   aa_g_ml=gL(76))
     db["イントラリポス10%」"] = Component("イントラリポス10%」", lipid_g_ml=gL(100), kcal_per_ml_override=1.1)
     db["イントラリポス20%」"] = Component("イントラリポス20%」", lipid_g_ml=gL(200), kcal_per_ml_override=2.0)
 
@@ -671,6 +685,11 @@ f"""=== {li.name} ===
         else:
             out.append("特記アラートなし。")
 
+        # 最下段の注意書き（小さめの一行）
+        out.append("")
+        out.append("—")
+        out.append("※本ツールはあくまでも補助であり、必ず検算を要する。")
+
         set_output("\n".join(out))
     except Exception as e:
         set_output(f"[例外] {e}")
@@ -691,5 +710,8 @@ if el2 is not None:
 
 init()
   </script>
+</body>
+</html>
+
 </body>
 </html>
