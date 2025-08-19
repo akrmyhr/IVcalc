@@ -31,6 +31,7 @@
     th { background: #f0f0f0; }
     .muted { color: #666; font-size: 0.92rem; }
     .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .scroll table { font-size: 0.94rem; }
     #output{
       white-space: pre-wrap;
       word-break: break-word;
@@ -156,10 +157,10 @@
             <tr><td>ソリタT3</td><td>35</td><td>20</td><td>–</td><td>–</td><td>35</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>43</b></td></tr>
             <tr><td>ソリタT3G</td><td>35</td><td>20</td><td>–</td><td>–</td><td>35</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>75</b></td></tr>
             <tr><td><b>フィジオ35輸液</b></td><td><b>35</b></td><td><b>20</b></td><td><b>5</b></td><td><b>3</b></td><td><b>28</b></td><td>–</td><td><b>20</b></td><td><b>5</b></td><td><b>10</b></td><td><b>100</b></td></tr>
-            <tr><td>G5</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>50</b></td></tr>
-            <tr><td>G10</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>100</b></td></tr>
-            <tr><td>G20</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>200</b></td></tr>
-            <tr><td>G50</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>500</b></td></tr>
+            <tr><td><b>5%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>50</b></td></tr>
+            <tr><td><b>10%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>100</b></td></tr>
+            <tr><td><b>20%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>200</b></td></tr>
+            <tr><td><b>50%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>500</b></td></tr>
             <tr><td>注射用水（溶媒）</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
           </tbody>
         </table>
@@ -169,17 +170,18 @@
         <table>
           <thead>
             <tr>
-              <th>添加薬（濃縮：1mLあたり）</th><th>Na (mEq/mL)</th><th>K</th><th>Ca</th><th>Mg</th><th>Cl</th><th>HCO₃⁻</th><th>P (mmol/mL)</th>
+              <th>添加薬（濃縮：1mLあたり）</th><th>Na (mEq/mL)</th><th>K</th><th>Ca</th><th>Mg</th><th>Cl</th><th>HCO₃⁻</th><th>P (mmol/mL)</th><th>備考</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>KCl 1 mEq/mL（混注）</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td></tr>
-            <tr><td>リン酸Na 10mmol/20mL</td><td><b>0.75</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>0.50</b></td></tr>
-            <tr><td>リン酸K 10mmol/20mL</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>0.50</b></td></tr>
-            <tr><td>重炭酸Na 8.4%</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td></tr>
-            <tr><td>Caグルコン酸 8.5%</td><td>–</td><td>–</td><td><b>0.39</b></td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
-            <tr><td>MgSO₄ 1 mEq/mL</td><td>–</td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td></tr>
-            <tr><td><b>10%塩化ナトリウム注</b></td><td><b>1.71</b></td><td>–</td><td>–</td><td>–</td><td><b>1.71</b></td><td>–</td><td>–</td></tr>
+            <tr><td>KCl 1 mEq/mL（混注）</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>濃縮K補正</td></tr>
+            <tr><td>リン酸Na 10mmol/20mL</td><td><b>0.75</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>0.50</b></td><td>P+Na補正</td></tr>
+            <tr><td>重炭酸Na 8.4%</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>NaHCO₃原液</td></tr>
+            <tr><td><b>重炭酸Na 7.0%</b></td><td><b>0.84</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>0.84</b></td><td>–</td><td>8.4%の約0.84倍</td></tr>
+            <tr><td>Caグルコン酸 8.5%</td><td>–</td><td>–</td><td><b>0.39</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>Ca補正</td></tr>
+            <tr><td>MgSO₄ 1 mEq/mL</td><td>–</td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>Mg補正</td></tr>
+            <tr><td><b>10%塩化ナトリウム注</b></td><td><b>1.71</b></td><td>–</td><td>–</td><td>–</td><td><b>1.71</b></td><td>–</td><td>–</td><td>高張NaCl</td></tr>
+            <tr><td><b>アスパラギン酸K注 10mEq/10mL</b></td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>Asp(1価)でK補正</td></tr>
           </tbody>
         </table>
       </div>
@@ -204,11 +206,11 @@
         <b>出典リンク</b><br>
         ・<a href="https://www.yueki.com/files/composition_search/water_electrolyte.pdf" target="_blank" rel="noopener">水・電解質製剤 組成表（yueki.com）</a><br>
         ・<a href="https://www.yueki.com/files/composition_search/nutrition.pdf" target="_blank" rel="noopener">栄養（糖・アミノ酸・脂肪乳剤等）組成表（yueki.com）</a><br>
-        ・10%食塩水・プレアミンP・フィジオ35輸液は各製品の添付文書/資料の標準値を使用
+        ・高張NaCl/重炭酸Na/アスパラギン酸K等の濃度は各製品の添付文書の標準値
       </div>
 
       <div class="muted" style="margin-top:8px;">
-        注: 酢酸リンゲルのNaは製品により130–131 mEq/Lの差があるため、内部DBでは130に正規化。糖量(g/L)はg/容器を体積で割って換算。グルコン酸は1価アニオンとして扱う。
+        注: 酢酸リンゲルのNaは製品により130–131 mEq/Lの差があるため、内部DBでは130に正規化。糖量(g/L)はg/容器を体積で割って換算。グルコン酸・アスパラギン酸はいずれも1価アニオンとして扱う。
       </div>
     </div>
   </details>
@@ -271,7 +273,7 @@ KCL_MAX_RATE = 20.0
 AA_OSM_PER_G = 9.0
 MW = {"GLUCOSE": 180.156}
 
-# 追加: Gluconate を1価アニオンとして扱う
+# 1価アニオンに Gluconate / Aspartate を含める
 ION_ORDER = ["Na","K","Cl","Ca","Mg","Lactate","Acetate","Gluconate","Citrate","Sulfate","Bicarbonate","Aspartate"]
 VALENCE   = {"Na":1,"K":1,"Cl":1,"Bicarbonate":1,"Lactate":1,"Acetate":1,"Gluconate":1,"Ca":2,"Mg":2,"Citrate":3,"Sulfate":2,"Aspartate":1}
 
@@ -313,7 +315,7 @@ class BolusRow:
     minutes: float
     route: str
 
-# ---- DB（参照表と一致）----
+# ---- 製剤DB（参照表と一致。G5/10/20/50は名称変更）----
 def build_db()->Dict[str,Component]:
     db: Dict[str,Component] = {}
     db["注射用水（溶媒）"] = Component("注射用水（溶媒）")
@@ -328,27 +330,28 @@ def build_db()->Dict[str,Component]:
     db["ソリタT3"]  = Component("ソリタT3",  glucose_g_ml=gL(43), elec_meq_ml={"Na":perL(35),"K":perL(20),"Cl":perL(35),"Lactate":perL(20)})
     db["ソリタT3G"] = Component("ソリタT3G", glucose_g_ml=gL(75), elec_meq_ml={"Na":perL(35),"K":perL(20),"Cl":perL(35),"Lactate":perL(20)})
 
-    db["G5"]  = Component("G5",  glucose_g_ml=gL(50))
-    db["G10"] = Component("G10", glucose_g_ml=gL(100))
-    db["G20"] = Component("G20", glucose_g_ml=gL(200))
-    db["G50"] = Component("G50", glucose_g_ml=gL(500))
+    # ブドウ糖（名称を%表示に統一）
+    db["5%ブドウ糖"]  = Component("5%ブドウ糖",  glucose_g_ml=gL(50))
+    db["10%ブドウ糖"] = Component("10%ブドウ糖", glucose_g_ml=gL(100))
+    db["20%ブドウ糖"] = Component("20%ブドウ糖", glucose_g_ml=gL(200))
+    db["50%ブドウ糖"] = Component("50%ブドウ糖", glucose_g_ml=gL(500))
 
     # 添加薬
     db["KCl 1 mEq/mL（混注）」"] = Component("KCl 1 mEq/mL（混注）」", elec_meq_ml={"K":1.0,"Cl":1.0})
     db["リン酸Na 10mmol/20mL」"] = Component("リン酸Na 10mmol/20mL」", elec_meq_ml={"Na":0.75}, phosphate_mmol_ml=0.5)
-    db["リン酸K 10mmol/20mL」"]  = Component("リン酸K 10mmol/20mL」",  elec_meq_ml={"K":1.0},  phosphate_mmol_ml=0.5)
     db["重炭酸Na 8.4%」"]       = Component("重炭酸Na 8.4%」", elec_meq_ml={"Na":1.0,"Bicarbonate":1.0})
+    db["重炭酸Na 7.0%」"]       = Component("重炭酸Na 7.0%」", elec_meq_ml={"Na":0.84,"Bicarbonate":0.84})
     db["Caグルコン酸 8.5%」"]    = Component("Caグルコン酸 8.5%」", elec_meq_ml={"Ca":0.39})
     db["MgSO4 1 mEq/mL」"]       = Component("MgSO4 1 mEq/mL」", elec_meq_ml={"Mg":1.0})
     db["10%塩化ナトリウム注」"] = Component("10%塩化ナトリウム注」", elec_meq_ml={"Na":1.71,"Cl":1.71})
+    db["アスパラギン酸K注 10mEq/10mL」"] = Component("アスパラギン酸K注 10mEq/10mL」", elec_meq_ml={"K":1.0,"Aspartate":1.0})
 
-    # 新規：フィジオ35輸液（グルコン酸を明示）
+    # 複合輸液
     db["フィジオ35輸液"] = Component(
         "フィジオ35輸液",
         glucose_g_ml=gL(100),
         elec_meq_ml={"Na":perL(35),"K":perL(20),"Ca":perL(5),"Mg":perL(3),"Cl":perL(28),"Acetate":perL(20),"Gluconate":perL(5)},
-        phosphate_mmol_ml=mmolL(10),
-        description="Na35,K20,Ca5,Mg3,Cl28,Acetate20,Gluconate5,P10,Glucose10%"
+        phosphate_mmol_ml=mmolL(10)
     )
 
     # 栄養
@@ -710,8 +713,5 @@ if el2 is not None:
 
 init()
   </script>
-</body>
-</html>
-
 </body>
 </html>
