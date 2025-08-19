@@ -58,6 +58,8 @@
   }
 
   .ref th,.ref td{font-size:.9rem;padding:5px}
+  .vit {font-size:.92rem; line-height:1.35}
+  .vit small {color:#888}
 </style>
 </head>
 <body>
@@ -85,7 +87,7 @@
   <summary>使い方</summary>
   <div class="muted" style="margin-top:6px">
     1) 体重(kg) → 2) ライン追加（ルート・成分・容量mL・流量mL/h） → 3) 必要なら下でボーラス入力（容量・回数/日・投与時間・ルート） → 4) 計算。<br>
-    出力に GIR, WQ, 電解質/日, ライン/ボーラス詳細, アラートが出る。
+    ※ <b>オーツカMV注（1組）</b>は<strong>容量mL欄＝組数</strong>で入力（例：1組なら「1」）。
   </div>
 </details>
 
@@ -95,7 +97,8 @@
     ・配合禁忌: Ca×P, Ca×HCO3-（禁忌）, Mg×P（注意）, 脂肪乳剤混注不可<br>
     ・K安全域: 濃度＞40 mEq/L, 速度＞20 mEq/h（合算速度も評価）<br>
     ・浸透圧: 末梢で900 mOsm/L超は警告（AA寄与は設定で可変）<br>
-    ・GIR/WQ と 栄養（kcal・脂肪 g/kg/日）、ボーラス寄与も合算
+    ・GIR/WQ と 栄養（kcal・脂肪 g/kg/日）、ボーラス寄与も合算<br>
+    ・<b>ビタミン量（MV等）</b>も合算表示（CV専用の警告あり）
   </div>
 </details>
 
@@ -108,13 +111,14 @@
         <tbody>
           <tr><th style="width:14rem">GIR</th><td>GIR (mg/kg/min) = 総ブドウ糖[g/日] × 1000 / (体重[kg] × 1440)</td></tr>
           <tr><th>WQ</th><td>WQ (mL/kg/day) = 総流量[mL/h] × 24 / 体重[kg]</td></tr>
-          <tr><th>理論浸透圧</th><td>mOsm/L = Σ(各イオンの mmol/L) + P[mmol/L] + Glucose[mmol/L] + （AA寄与 9×AA[g/L], 任意）<br>※ mEq→mmol: mmol = mEq / |z|（Na,K,Cl,HCO₃,乳酸,酢酸,グルコン酸=1 / Ca,Mg=2 / クエン酸=3 / 硫酸=2）</td></tr>
+          <tr><th>理論浸透圧</th><td>mOsm/L = Σ(各イオンの mmol/L) + P[mmol/L] + Glucose[mmol/L] + （AA寄与 9×AA[g/L], 任意）<br>
+            ※ mEq→mmol: mmol = mEq / |z|（Na,K,Cl,HCO₃,乳酸,酢酸,グルコン酸=1 / Ca,Mg=2 / クエン酸=3 / 硫酸=2）</td></tr>
           <tr><th>熱量</th><td>Glucose・AA 4 kcal/g、脂肪 9 kcal/g（脂肪は添文のkcal/mLを優先）</td></tr>
         </tbody>
       </table>
     </div>
 
-    <div style="margin-top:10px"><b>組成表（1Lあたり / 添加薬は1mLあたり）</b></div>
+    <div style="margin-top:10px"><b>組成表（1Lあたり / 添加薬は1mLあたり / MVは1組あたり）</b></div>
 
     <!-- 基本輸液・糖液 -->
     <div class="scroll" style="margin-top:6px">
@@ -164,16 +168,23 @@
       </table>
     </div>
 
-    <!-- 栄養 -->
+    <!-- ビタミン剤（1組あたり） -->
     <div class="scroll" style="margin-top:10px">
       <table class="ref">
         <thead>
-          <tr><th>栄養</th><th>アミノ酸 (g/L)</th><th>脂肪 (g/L)</th><th>kcal/mL</th><th>備考</th></tr>
+          <tr>
+            <th>ビタミン製剤</th><th>A (IU)</th><th>D (IU)</th><th>E (mg)</th><th>K (mg)</th>
+            <th>B1 (mg)</th><th>B2 (mg)</th><th>B6 (mg)</th><th>B12 (μg)</th>
+            <th>ナイアシン (mg)</th><th>葉酸 (mg)</th><th>C (mg)</th><th>パントテン酸 (mg)</th><th>ビオチン (μg)</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td>プレアミンP 7.6%</td><td><b>76</b></td><td>–</td><td>約0.30</td><td>小児用AA製剤</td></tr>
-          <tr><td>イントラリポス10%</td><td>–</td><td><b>100</b></td><td><b>1.1</b></td><td>添文準拠</td></tr>
-          <tr><td>イントラリポス20%</td><td>–</td><td><b>200</b></td><td><b>2.0</b></td><td>添文準拠</td></tr>
+          <tr>
+            <td><b>オーツカMV注（1組）</b></td>
+            <td><b>3300</b></td><td><b>200</b></td><td><b>10</b></td><td><b>2</b></td>
+            <td><b>3.1</b></td><td><b>3.6</b></td><td><b>4</b></td><td><b>5</b></td>
+            <td><b>40</b></td><td><b>0.4</b></td><td><b>100</b></td><td><b>15</b></td><td><b>60</b></td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -182,7 +193,7 @@
       <b>出典リンク</b><br>
       ・<a href="https://www.yueki.com/files/composition_search/water_electrolyte.pdf" target="_blank" rel="noopener">水・電解質製剤 組成表（yueki.com）</a><br>
       ・<a href="https://www.yueki.com/files/composition_search/nutrition.pdf" target="_blank" rel="noopener">栄養（糖・アミノ酸・脂肪乳剤）組成表（yueki.com）</a><br>
-      ・フィジオ35、10%NaCl、重炭酸Na 7%/8.4%、プレアミンP、アスパラギン酸K注は各添付文書標準値
+      ・<b>オーツカMV注</b>：添付文書（1号+2号の1組あたり）に基づく。
     </div>
   </div>
 </details>
@@ -247,6 +258,10 @@ class Component:
     kcal_per_ml_override: float | None = None
     elec_meq_ml: Dict[str,float] = field(default_factory=dict)
     phosphate_mmol_ml: float = 0.0
+    # 追加：ビタミン（1組あたり or 1mLあたり）
+    vitamins_per_unit: Dict[str, float] = field(default_factory=dict)  # 「容量mL」を「組数」として扱う
+    vitamins_per_ml: Dict[str, float] = field(default_factory=dict)    # 1mLあたりに定義する製剤があれば
+    cv_only: bool = False                                             # 末梢不可の注意
     description: str = ""
     def kcal_per_ml(self)->float:
         if self.kcal_per_ml_override is not None: return self.kcal_per_ml_override
@@ -306,6 +321,18 @@ def build_db()->Dict[str,Component]:
     db["グルコン酸Ca 8.5%"] = Component("グルコン酸Ca 8.5%", elec_meq_ml={"Ca":0.39})
     db["硫酸Mg 1 mEq/mL"] = Component("硫酸Mg 1 mEq/mL", elec_meq_ml={"Mg":1.0})
 
+    # ビタミン製剤（1組あたり）: オーツカMV注（CV専用）
+    db["オーツカMV注（1組）"] = Component(
+        "オーツカMV注（1組）",
+        vitamins_per_unit={
+            "A_IU":3300, "D_IU":200, "E_mg":10, "K_mg":2,
+            "B1_mg":3.1, "B2_mg":3.6, "B6_mg":4.0, "B12_ug":5.0,
+            "Niacin_mg":40, "Folic_mg":0.4, "C_mg":100, "Pantothenate_mg":15, "Biotin_ug":60
+        },
+        cv_only=True,
+        description="容量mL欄＝組数（例:1）。CV専用。"
+    )
+
     # 栄養
     db["プレアミンP 7.6%"] = Component("プレアミンP 7.6%", aa_g_ml=gL(76))
     db["イントラリポス10%"] = Component("イントラリポス10%", lipid_g_ml=gL(100), kcal_per_ml_override=1.1)
@@ -314,7 +341,7 @@ def build_db()->Dict[str,Component]:
 
 DB: Dict[str,Component] = build_db()
 
-# 入力候補の表示順（指示どおり）
+# 入力候補の表示順（要求反映）
 COMP_ORDER = [
   # 基本液
   "生理食塩液 0.9%","乳酸リンゲル","酢酸リンゲル（ヴィーンF相当）","ヴィーンD（酢酸+Glu5%）",
@@ -323,50 +350,41 @@ COMP_ORDER = [
   # 添加薬（KCl直下にアスパラギン酸K）
   "KCl 1 mEq/mL（混注）","アスパラギン酸K注射液 10mEq/10mL","リン酸ナトリウム 10mmol/20mL",
   "重炭酸ナトリウム 7.0%","重炭酸ナトリウム 8.4%","グルコン酸Ca 8.5%","硫酸Mg 1 mEq/mL",
+  # ビタミン製剤
+  "オーツカMV注（1組）",
   # 栄養
   "プレアミンP 7.6%","イントラリポス10%","イントラリポス20%"
 ]
 
-def set_output(text:str):
-    document.getElementById("output").innerText = text
-
+# 候補リスト埋め
 def populate_comp_options():
     dl = document.getElementById("comp-options")
     while dl.firstChild: dl.removeChild(dl.firstChild)
-    added = set()
+    added=set()
     for key in COMP_ORDER:
         if key in DB and key not in added:
-            opt = document.createElement("option"); opt.value = key
-            dl.appendChild(opt); added.add(key)
-    # 予防的（DBにあって順序表に無い場合）
-    for key in DB.keys():
+            opt=document.createElement("option"); opt.value=key; dl.appendChild(opt); added.add(key)
+    for key in DB.keys(): # 予備
         if key not in added:
-            opt = document.createElement("option"); opt.value = key
-            dl.appendChild(opt); added.add(key)
+            opt=document.createElement("option"); opt.value=key; dl.appendChild(opt); added.add(key)
 
-@dataclass
-class MixRow: comp_key: str; volume_ml: float
-@dataclass
-class Line: name: str; route: str = "末梢"; flow_ml_h: float = 0.0; rows: List[MixRow] = field(default_factory=list)
-@dataclass
-class BolusRow: comp_key: str; volume_ml: float; count_per_day: int; minutes: float; route: str
-
+# 合成（電解質/糖/AA/脂肪のみ）
 def sum_line(line: Line) -> Tuple[float, Dict[str,float], float, float, float, float]:
-    total=0.0; totals_meq:Dict[str,float]={}; glu=aa=lip=0.0; phos=0.0
+    total=0.0; totals_meq={ion:0.0 for ion in ION_ORDER}; glu=aa=lip=0.0; phos=0.0
     for r in line.rows:
         comp=DB.get(r.comp_key)
         if not comp or r.volume_ml<=0: continue
-        v=r.volume_ml; total+=v
-        glu+=comp.glucose_g_ml*v; aa+=comp.aa_g_ml*v; lip+=comp.lipid_g_ml*v
-        for ion,val in comp.elec_meq_ml.items():
-            totals_meq[ion]=totals_meq.get(ion,0.0)+val*v
-        phos+=comp.phosphate_mmol_ml*v
+        v=r.volume_ml
+        total+=v
+        glu += comp.glucose_g_ml*v; aa += comp.aa_g_ml*v; lip += comp.lipid_g_ml*v
+        for ion,val in comp.elec_meq_ml.items(): totals_meq[ion]+=val*v
+        phos += comp.phosphate_mmol_ml*v
     return total, totals_meq, glu, aa, lip, phos
 
+# 理論浸透圧
 def osmolarity(total_ml, totals_meq, glu_g, phos_mmol, aa_g, include_aa)->float:
     if total_ml<=0: return 0.0
-    L=total_ml/1000.0
-    mOsm=0.0
+    L=total_ml/1000.0; mOsm=0.0
     for ion,tot_meq in totals_meq.items():
         z=VALENCE.get(ion,1); mmol=tot_meq/z; mOsm+=mmol/L
     mOsm+=phos_mmol/L
@@ -378,6 +396,7 @@ def gir_from_total_glu_g_day(total_glu_g_day, wt)->float:
     if wt<=0: return 0.0
     return (total_glu_g_day*1000.0)/(wt*1440.0)
 
+# UI生成ヘルパ
 _line_seq=0
 def add_comp_row(tbody):
     tr=document.createElement("tr")
@@ -477,9 +496,16 @@ def compute(evt=None):
         alerts=[]; report_lines=[]; report_bolus=[]; total_K_rate_meq_h=0.0
         per_day_meq_total={ion:0.0 for ion in ION_ORDER}; per_day_phos_mmol_total=0.0
 
+        # 追加：ビタミン合算（1日あたり）
+        vit_keys = ["A_IU","D_IU","E_mg","K_mg","B1_mg","B2_mg","B6_mg","B12_ug",
+                    "Niacin_mg","Folic_mg","C_mg","Pantothenate_mg","Biotin_ug"]
+        vit_total = {k:0.0 for k in vit_keys}
+
+        # ライン計算
         for li in lines:
             total_ml, totals_meq, glu_g, aa_g, lip_g, phos_mmol = sum_line(li)
             vol_day_ml=li.flow_ml_h*24.0; total_flow_ml_h+=li.flow_ml_h
+
             conc_meq_ml={ion:(totals_meq.get(ion,0.0)/total_ml if total_ml>0 else 0.0) for ion in ION_ORDER}
             k_conc_meq_L=conc_meq_ml.get("K",0.0)*1000.0
             k_rate_meq_h=conc_meq_ml.get("K",0.0)*li.flow_ml_h; total_K_rate_meq_h+=k_rate_meq_h
@@ -487,21 +513,36 @@ def compute(evt=None):
             for ion in ION_ORDER: per_day_meq_total[ion]+=conc_meq_ml.get(ion,0.0)*vol_day_ml
             if total_ml>0: per_day_phos_mmol_total+=(phos_mmol/total_ml)*vol_day_ml
 
+            # ビタミン：容量欄＝組数として加算
+            for r in li.rows:
+                comp=DB.get(r.comp_key)
+                if not comp: continue
+                if comp.vitamins_per_unit:
+                    units=r.volume_ml  # ← 組数として扱う
+                    for k,v in comp.vitamins_per_unit.items(): vit_total[k]+=v*units
+                    if comp.cv_only and li.route=="末梢":
+                        alerts.append(f"[{li.name}] 【注意】{comp.name} はCV専用。末梢への混注は避ける。")
+                if comp.vitamins_per_ml:
+                    for k,v in comp.vitamins_per_ml.items(): vit_total[k]+=v*r.volume_ml
+
+            # 熱量
             kcal_ml=0.0; lip_g_ml=0.0
             for r in li.rows:
                 comp=DB.get(r.comp_key)
                 if not comp or total_ml<=0: continue
                 frac=r.volume_ml/total_ml
-                kcal_ml+= (comp.kcal_per_ml())*frac
-                lip_g_ml+= comp.lipid_g_ml*frac
+                kcal_ml+=comp.kcal_per_ml()*frac
+                lip_g_ml+=comp.lipid_g_ml*frac
             kcal_day=kcal_ml*vol_day_ml; lipid_g_day=lip_g_ml*vol_day_ml
             total_kcal_day+=kcal_day; total_lipid_g_day+=lipid_g_day
 
+            # 浸透圧
             osm_th=osmolarity(total_ml, totals_meq, glu_g, phos_mmol, aa_g, include_aa=False)
             osm_aa=osmolarity(total_ml, totals_meq, glu_g, phos_mmol, aa_g, include_aa=include_aa)
             if li.route=="末梢" and osm_aa>PERIPHERAL_OSM_LIMIT:
                 alerts.append(f"[{li.name}] 浸透圧 {osm_aa:.0f} mOsm/L > {PERIPHERAL_OSM_LIMIT:.0f}（末梢不可）")
 
+            # 禁忌/注意
             has_ca=conc_meq_ml.get("Ca",0.0)>0; has_mg=conc_meq_ml.get("Mg",0.0)>0
             has_p=(phos_mmol>0); has_hco3=conc_meq_ml.get("Bicarbonate",0.0)>0
             if has_ca and has_p: alerts.append(f"[{li.name}] 【禁忌】Ca塩×リン酸塩（沈殿）")
@@ -512,12 +553,12 @@ def compute(evt=None):
             if k_conc_meq_L>KCL_MAX_CONC: alerts.append(f"[{li.name}] K濃度 {k_conc_meq_L:.1f} mEq/L > {KCL_MAX_CONC}")
             if k_rate_meq_h>KCL_MAX_RATE: alerts.append(f"[{li.name}] K投与速度 {k_rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
 
+            # レポート
             ion_lines=[]
             for ion in ION_ORDER:
                 v=conc_meq_ml.get(ion,0.0)*1000.0
                 if v>0: ion_lines.append(f"{ion:>10}: {v:6.2f} mEq/L")
             if total_ml>0 and phos_mmol>0: ion_lines.append(f"{'P (mmol/L)':>10}: {phos_mmol/(total_ml/1000.0):6.2f}")
-
             report_lines.append(
 f"""=== {li.name} ===
 合計容量: {total_ml:.1f} mL   流量: {li.flow_ml_h:.1f} mL/h   ルート: {li.route}
@@ -531,6 +572,7 @@ f"""=== {li.name} ===
 """)
             if total_ml>0: total_glu_g_day += (glu_g/total_ml)*vol_day_ml
 
+        # ボーラス（ここではMV入力を想定しないが汎用対応）
         for i,b in enumerate(bolus, start=1):
             comp=DB.get(b.comp_key)
             dose_meq={ion: comp.elec_meq_ml.get(ion,0.0)*b.volume_ml for ion in ION_ORDER}
@@ -542,6 +584,15 @@ f"""=== {li.name} ===
             total_kcal_day+=(comp.kcal_per_ml()*b.volume_ml)*b.count_per_day
             total_lipid_g_day+=dose_fat*b.count_per_day
 
+            # ビタミン（ボーラス）
+            if comp.vitamins_per_unit:
+                for k,v in comp.vitamins_per_unit.items(): vit_total[k]+=v*b.count_per_day
+                if comp.cv_only and b.route=="末梢":
+                    alerts.append(f"[ボーラス#{i}] 【注意】{comp.name} はCV専用。末梢への投与は避ける。")
+            if comp.vitamins_per_ml:
+                for k,v in comp.vitamins_per_ml.items(): vit_total[k]+=v*b.volume_ml*b.count_per_day
+
+            # K速度/濃度・浸透圧チェック
             if b.minutes>0:
                 rate_meq_h=(dose_meq.get("K",0.0))/(b.minutes/60.0)
                 if rate_meq_h>KCL_MAX_RATE: alerts.append(f"[ボーラス#{i}] K投与速度 {rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
@@ -553,6 +604,7 @@ f"""=== {li.name} ===
             if comp.lipid_g_ml>0: alerts.append(f"[ボーラス#{i}] 脂肪乳剤はボーラス不適（緩徐投与を検討）")
             report_bolus.append(f"- #{i} {b.comp_key}  {b.volume_ml:.1f} mL × {b.count_per_day}/日, ルート:{b.route}")
 
+        # 指標
         WQ=(total_flow_ml_h*24.0)/wt if wt>0 else 0.0
         GIR=gir_from_total_glu_g_day(total_glu_g_day, wt)
         if total_K_rate_meq_h>KCL_MAX_RATE: alerts.append(f"総K投与速度 {total_K_rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
@@ -562,13 +614,7 @@ f"""=== {li.name} ===
         else:
             if GIR>GIR_LIMIT_GENERAL: alerts.append(f"GIR {GIR:.2f} mg/kg/min > {GIR_LIMIT_GENERAL}（高血糖リスク）")
 
-        ions_block=[]
-        for ion in ION_ORDER:
-            v_day=per_day_meq_total[ion]
-            ions_block.append(f"{ion:11s}: {v_day:7.2f}  ({(v_day/wt if wt>0 else 0.0):.3f})  mEq/day (mEq/kg/day)")
-        p_day=per_day_phos_mmol_total
-        ions_block.append(f"{'P (mmol/day)':11s}: {p_day:7.2f}  ({(p_day/wt if wt>0 else 0.0):.3f})  mmol/day (mmol/kg/day)")
-
+        # 出力
         out=[]
         out.append("=== 概要 ===")
         out.append(f"総流量(点滴): {total_flow_ml_h:.1f} mL/h")
@@ -576,20 +622,45 @@ f"""=== {li.name} ===
         out.append(f"GIR: {GIR:.3f} mg/kg/min（点滴+ボーラス合算）")
         out.append("")
         out.append("=== 電解質（全体） ===")
+        ions_block=[]
+        for ion in ION_ORDER:
+            v_day=per_day_meq_total[ion]
+            ions_block.append(f"{ion:11s}: {v_day:7.2f}  ({(v_day/wt if wt>0 else 0.0):.3f})  mEq/day (mEq/kg/day)")
+        p_day=per_day_phos_mmol_total
+        ions_block.append(f"{'P (mmol/day)':11s}: {p_day:7.2f}  ({(p_day/wt if wt>0 else 0.0):.3f})  mmol/day (mmol/kg/day)")
         out.append("\n".join(ions_block))
         out.append("")
         if report_lines:
             out.append("=== ライン詳細 ===")
-            out.append("\n".join(report_lines))
-            out.append("")
+            out.append("\n".join(report_lines)); out.append("")
         if report_bolus:
             out.append("=== ボーラス詳細 ===")
-            out.append("\n".join(report_bolus))
-            out.append("")
+            out.append("\n".join(report_bolus)); out.append("")
+
         out.append("=== 栄養（全体） ===")
         out.append(f"総kcal: {total_kcal_day:.0f} kcal/day")
         out.append(f"脂肪: {(total_lipid_g_day/wt if wt>0 else 0.0):.2f} g/kg/day")
         out.append("")
+
+        # ビタミン表示（入力があったときのみ）
+        if any(vit_total.values()):
+            out.append("=== ビタミン（投与量） ===")
+            # 表示順と単位
+            labels = [
+              ("A_IU","A","IU/日"),("D_IU","D","IU/日"),("E_mg","E","mg/日"),("K_mg","K","mg/日"),
+              ("B1_mg","B1","mg/日"),("B2_mg","B2","mg/日"),("B6_mg","B6","mg/日"),("B12_ug","B12","μg/日"),
+              ("Niacin_mg","ナイアシン","mg/日"),("Folic_mg","葉酸","mg/日"),("C_mg","C","mg/日"),
+              ("Pantothenate_mg","パントテン酸","mg/日"),("Biotin_ug","ビオチン","μg/日")
+            ]
+            lines=[]
+            for key,lab,unit in labels:
+                val=vit_total.get(key,0.0)
+                if val>0: lines.append(f"{lab:8s}: {val:g} {unit}")
+            out.append("\n".join(lines))
+            out.append("")
+            out.append("※オーツカMV注はCV専用。末梢への混注は避ける。遮光保護を考慮。")
+            out.append("")
+
         if alerts:
             out.append("!! アラート / 配合禁忌・注意 !!")
             for a in alerts: out.append(f" - {a}")
@@ -598,10 +669,11 @@ f"""=== {li.name} ===
         out.append("")
         out.append("—")
         out.append("※本ツールはあくまでも補助であり、必ず検算を要する。")
-        set_output("\n".join(out))
+        document.getElementById("output").innerText = "\n".join(out)
     except Exception as e:
-        set_output(f"[例外] {e}")
+        document.getElementById("output").innerText = f"[例外] {e}"
 
+# 初期化
 def init():
     populate_comp_options(); add_line(); add_bolus_row()
 
