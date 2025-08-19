@@ -108,20 +108,15 @@ Ca×P、Ca×HCO₃⁻（禁忌）、Mg×P（注意）、脂肪混注不可をチ
 
 データの根拠と出典
 
-水・電解質製剤 組成表（湯液.com）
+水・電解質製剤 組成表(yueki.com）
 https://www.yueki.com/files/composition_search/water_electrolyte.pdf
 
-栄養（糖・アミノ酸・脂肪乳剤）組成表（湯液.com）
+栄養（糖・アミノ酸・脂肪乳剤）組成表（yueki.com）
 https://www.yueki.com/files/composition_search/nutrition.pdf
 
 添加薬（KCl、リン酸Na/K、重炭酸Na、Caグルコン酸、MgSO₄）は各製剤の添付文書の標準値に準拠。
 末梢の許容浸透圧（≤900 mOsm/L）はPPNの一般推奨に基づく。小児・新生児では施設差があるため、施設閾値を優先。
 
-使い方（公開/ローカル）
-
-公開版：https://<あなたのユーザー名>.github.io/<リポジトリ名>/
-ローカル配信：python -m http.server 8000 --bind 0.0.0.0 → http://<PCのIP>:8000/
-iOSのSafariは file:// 直開きではJSを実行しないため、HTTPで配信する。
 
 開発メモ
 
