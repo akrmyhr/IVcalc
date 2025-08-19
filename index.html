@@ -1,284 +1,241 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>IV計算（小児/新生児）</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>IV計算（小児/新生児）</title>
 
-  <!-- PyScript 固定版 -->
-  <link rel="stylesheet" href="https://pyscript.net/releases/2025.7.3/core.css">
-  <script type="module" src="https://pyscript.net/releases/2025.7.3/core.js"></script>
+<link rel="stylesheet" href="https://pyscript.net/releases/2025.7.3/core.css">
+<script type="module" src="https://pyscript.net/releases/2025.7.3/core.js"></script>
 
-  <style>
-    /* レイアウト安定化 */
-    *, *::before, *::after { box-sizing: border-box; }
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  :root{--pad:16px}
+  body{font-family:ui-sans-serif,-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;margin:var(--pad)}
+  h1{font-size:1.18rem;margin:0 0 8px}
+  h3{margin:14px 0 8px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+  input[type=number]{width:8.5rem}
+  input[type=text]{width:14rem}
+  select{max-width:15rem}
+  button{padding:6px 10px;border-radius:8px;border:1px solid #ddd;background:#f7f7f7;cursor:pointer}
+  .btn-primary{background:#2563eb;color:#fff;border-color:#1d4ed8;font-weight:600}
+  .btn-primary.big{font-size:1.05rem;padding:10px 16px;border-radius:12px}
+  .btn-danger{background:#8b0000;color:#fff;border-color:#6f0000}
+  .line,.box{border:1px solid #e5e5e5;border-radius:12px;padding:10px;margin:10px 0;background:#fafafa}
+  .box{overflow:hidden}
+  .line h3{margin:0 0 8px;font-size:1.05rem}
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  th,td{border:1px solid #ececec;padding:6px;font-size:.95rem}
+  th{background:#f6f6f6}
+  .muted{color:#666;font-size:.92rem}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #output{
+    white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;
+    background:#0b1020;color:#d3ffd3;padding:12px;border-radius:12px;min-height:240px
+  }
+  details{border:1px solid #eee;border-radius:12px;padding:8px 12px;background:#fbfbfb}
+  details>summary{cursor:pointer;font-weight:600}
 
-    :root { --pad: 16px; }
-    body { font-family: ui-sans-serif, -apple-system, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; margin: var(--pad); }
-    h1 { font-size: 1.15rem; margin: 0 0 8px; }
-    h3 { margin: 16px 0 6px; }
-    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
-    input[type=number] { width: 8.5rem; }
-    select { max-width: 14rem; }
-    button { padding: 6px 10px; border-radius: 6px; border: 1px solid #ddd; background:#f7f7f7; cursor: pointer; }
-    .btn-primary { background:#2563eb; color:#fff; border-color:#1d4ed8; font-weight:600; }
-    .btn-primary.big { font-size:1.05rem; padding:10px 16px; border-radius:10px; }
-    .line, .box { border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin: 10px 0; background:#fafafa; }
-    .box { overflow: hidden; }
-    .line h3 { margin: 0 0 8px; font-size: 1.05rem; }
-    table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-    th, td { border: 1px solid #e5e5e5; padding: 6px; font-size: 0.95rem; }
-    th { background: #f0f0f0; }
-    .muted { color: #666; font-size: 0.92rem; }
-    .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .scroll table { font-size: 0.94rem; }
-    #output{
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-      background: #0b1020; color: #d3ffd3;
-      padding: 12px; border-radius: 10px; min-height: 240px;
+  .compute-bar{
+    position:sticky;top:0;z-index:20;background:#fff;padding:8px;margin-top:8px;
+    border:1px solid #e5e5e5;border-radius:12px;display:flex;gap:8px;align-items:center;justify-content:center;
+    box-shadow:0 2px 10px rgba(0,0,0,.06)
+  }
+
+  #bolus-table{border-collapse:separate;border-spacing:0}
+  @media (max-width:520px){
+    input[type=number]{width:7.2rem}
+    input[type=text]{width:100%}
+    #bolus-table thead{display:none}
+    #bolus-table,#bolus-table tbody,#bolus-table tr,#bolus-table td{display:block;width:100%;border:0}
+    #bolus-table tbody tr{
+      background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:10px 12px;margin:10px 0
     }
-    .btn-danger { background:#8b0000; color:#fff; border-color:#6f0000; }
-    details { border: 1px solid #eee; border-radius: 10px; padding: 8px 12px; background:#fbfbfb; }
-    details > summary { cursor: pointer; font-weight: 600; }
+    #bolus-table td{padding:6px 0}
+    #bolus-table td::before{content:attr(data-label);display:block;font-size:.8rem;color:#666;margin-bottom:2px}
+    #bolus-table td.actions{text-align:right;padding-top:4px}
+  }
 
-    /* 目立つ計算ボタンバー（結果直前） */
-    .compute-bar {
-      position: sticky; top: 0; z-index: 20;
-      background: #fff; padding: 8px; margin-top: 8px;
-      border: 1px solid #e5e5e5; border-radius: 10px;
-      display: flex; gap: 8px; align-items: center; justify-content: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,.06);
-    }
-    .compute-bar .muted { margin-left: 6px; }
-
-    /* ===== iPhone向け：ボーラス表を縦積みカード表示 ===== */
-    #bolus-table { border-collapse: separate; border-spacing: 0; }
-    @media (max-width: 520px) {
-      input[type=number] { width: 6.8rem; }
-
-      #bolus-table thead { display: none; }
-      #bolus-table, #bolus-table tbody, #bolus-table tr, #bolus-table td { display: block; width: 100%; border: 0; }
-      #bolus-table tbody tr {
-        background: #fff;
-        border: 1px solid #e5e5e5;
-        border-radius: 10px;
-        padding: 10px 12px;
-        margin: 10px 0;
-      }
-      #bolus-table td { padding: 6px 0; }
-      #bolus-table td::before {
-        content: attr(data-label);
-        display: block;
-        font-size: 0.8rem;
-        color: #666;
-        margin-bottom: 2px;
-      }
-      #bolus-table td.actions { text-align: right; padding-top: 4px; }
-    }
-  </style>
+  .ref th,.ref td{font-size:.9rem;padding:5px}
+</style>
 </head>
 <body>
-  <h1>IV計算（小児/新生児）</h1>
+<h1>IV計算（小児/新生児）</h1>
 
-  <!-- 上部の操作列（元の計算ボタンは残す） -->
-  <div class="row">
-    <label>体重(kg)
-      <input id="wt" type="number" step="0.01" placeholder="例: 12">
-    </label>
-    <label>モード
-      <select id="mode">
-        <option>一般モード</option>
-        <option>新生児モード</option>
-      </select>
-    </label>
-    <label>浸透圧計算
-      <select id="aa_osm">
-        <option>浸透圧にAA寄与を含めない</option>
-        <option>浸透圧にAA寄与を含める</option>
-      </select>
-    </label>
-    <button id="add-line">ライン追加</button>
-    <button id="compute" class="btn-primary" style="margin-left:auto;">計算</button>
+<div class="row">
+  <label>体重(kg) <input id="wt" type="number" step="0.01" placeholder="例: 12"></label>
+  <label>モード
+    <select id="mode">
+      <option>一般モード</option>
+      <option>新生児モード</option>
+    </select>
+  </label>
+  <label>浸透圧計算
+    <select id="aa_osm">
+      <option>浸透圧にAA寄与を含めない</option>
+      <option>浸透圧にAA寄与を含める</option>
+    </select>
+  </label>
+  <button id="add-line">ライン追加</button>
+  <button id="compute" class="btn-primary" style="margin-left:auto">計算</button>
+</div>
+
+<details style="margin:10px 0">
+  <summary>使い方</summary>
+  <div class="muted" style="margin-top:6px">
+    1) 体重(kg) → 2) ライン追加（ルート・成分・容量mL・流量mL/h） → 3) 必要なら下でボーラス入力（容量・回数/日・投与時間・ルート） → 4) 計算。<br>
+    出力に GIR, WQ, 電解質/日, ライン/ボーラス詳細, アラートが出る。
   </div>
+</details>
 
-  <details style="margin:10px 0;">
-    <summary>使い方</summary>
-    <div class="muted" style="margin-top:6px;">
-      1) 体重(kg)<br>
-      2) 「ライン追加」→ ルート・成分・容量(mL)、流量 mL/h<br>
-      3) ボーラス投与があれば下で製品・容量・回数/日・投与時間(任意)・ルート<br>
-      出力に GIR, WQ, 電解質/日, ライン/ボーラス詳細とアラートを表示
-    </div>
-  </details>
-
-  <details style="margin:10px 0;">
-    <summary>このページでできること</summary>
-    <div class="muted" style="margin-top:6px;">
-      ・配合禁忌: Ca×P, Ca×HCO3-（禁忌）, Mg×P（注意）, 脂肪乳剤混注不可<br>
-      ・Kの安全域: 濃度&gt;40 mEq/L, 速度&gt;20 mEq/h（合算速度も評価）<br>
-      ・浸透圧: 末梢で900 mOsm/L超は警告（AA寄与は設定で可変）<br>
-      ・GIR/WQ と 栄養（kcal, 脂肪 g/kg/日）+ ボーラス寄与
-    </div>
-  </details>
-
-  <details style="margin:10px 0;">
-    <summary>参考・出典 / 計算式・組成表（このアプリの根拠）</summary>
-    <div class="muted" style="margin-top:6px;">
-      <b>計算式</b>
-      <div class="scroll">
-        <table>
-          <tbody>
-            <tr><th style="width:14rem;">GIR</th><td>GIR (mg/kg/min) = 総ブドウ糖[g/日] × 1000 / (体重[kg] × 1440)</td></tr>
-            <tr><th>WQ</th><td>WQ (mL/kg/day) = 総流量[mL/h] × 24 / 体重[kg]</td></tr>
-            <tr><th>理論浸透圧</th><td>mOsm/L = Σ(各イオンの mmol/L) + P[mmol/L] + Glucose[mmol/L] + （AA寄与 9×AA[g/L], 任意）<br>※ mEq→mmol 変換: mmol = mEq / |z|（Na, K, Cl, HCO₃, 乳酸, 酢酸, グルコン酸=1、Ca, Mg=2、クエン酸=3, 硫酸=2）</td></tr>
-            <tr><th>熱量</th><td>Glucose・AA 4 kcal/g、脂肪 9 kcal/g（脂肪は添文のkcal/mLを優先）</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div style="margin-top:10px;"><b>組成表（1Lあたり, 添加薬は1mLあたり）</b></div>
-
-      <div class="scroll" style="margin-top:6px;">
-        <table>
-          <thead>
-            <tr>
-              <th>製剤</th><th>Na</th><th>K</th><th>Ca</th><th>Mg</th><th>Cl</th><th>乳酸</th><th>酢酸</th><th>グルコン酸</th><th>P (mmol/L)</th><th>ブドウ糖 (g/L)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>生理食塩液 0.9%</td><td>154</td><td>–</td><td>–</td><td>–</td><td>154</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
-            <tr><td>乳酸リンゲル</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>28</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
-            <tr><td>酢酸リンゲル（ヴィーンF相当）</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>–</td><td>28</td><td>–</td><td>–</td><td>–</td></tr>
-            <tr><td>酢酸リンゲル＋Glu5%（ヴィーンD相当）</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>–</td><td>28</td><td>–</td><td>–</td><td><b>50</b></td></tr>
-            <tr><td>ソリタT1</td><td>90</td><td>–</td><td>–</td><td>–</td><td>70</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>26</b></td></tr>
-            <tr><td>ソリタT2</td><td>84</td><td>20</td><td>–</td><td>–</td><td>66</td><td>20</td><td>–</td><td><b>10</b></td><td><b>32</b></td></tr>
-            <tr><td>ソリタT3</td><td>35</td><td>20</td><td>–</td><td>–</td><td>35</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>43</b></td></tr>
-            <tr><td>ソリタT3G</td><td>35</td><td>20</td><td>–</td><td>–</td><td>35</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>75</b></td></tr>
-            <tr><td><b>フィジオ35輸液</b></td><td><b>35</b></td><td><b>20</b></td><td><b>5</b></td><td><b>3</b></td><td><b>28</b></td><td>–</td><td><b>20</b></td><td><b>5</b></td><td><b>10</b></td><td><b>100</b></td></tr>
-            <tr><td><b>5%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>50</b></td></tr>
-            <tr><td><b>10%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>100</b></td></tr>
-            <tr><td><b>20%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>200</b></td></tr>
-            <tr><td><b>50%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>500</b></td></tr>
-            <tr><td>注射用水（溶媒）</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="scroll" style="margin-top:10px;">
-        <table>
-          <thead>
-            <tr>
-              <th>添加薬（濃縮：1mLあたり）</th><th>Na (mEq/mL)</th><th>K</th><th>Ca</th><th>Mg</th><th>Cl</th><th>HCO₃⁻</th><th>P (mmol/mL)</th><th>備考</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>KCl 1 mEq/mL（混注）</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>濃縮K補正</td></tr>
-            <tr><td>リン酸Na 10mmol/20mL</td><td><b>0.75</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>0.50</b></td><td>P+Na補正</td></tr>
-            <tr><td>重炭酸Na 8.4%</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>NaHCO₃原液</td></tr>
-            <tr><td><b>重炭酸Na 7.0%</b></td><td><b>0.84</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>0.84</b></td><td>–</td><td>8.4%の約0.84倍</td></tr>
-            <tr><td>Caグルコン酸 8.5%</td><td>–</td><td>–</td><td><b>0.39</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>Ca補正</td></tr>
-            <tr><td>MgSO₄ 1 mEq/mL</td><td>–</td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>Mg補正</td></tr>
-            <tr><td><b>10%塩化ナトリウム注</b></td><td><b>1.71</b></td><td>–</td><td>–</td><td>–</td><td><b>1.71</b></td><td>–</td><td>–</td><td>高張NaCl</td></tr>
-            <tr><td><b>アスパラギン酸K注 10mEq/10mL</b></td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>Asp(1価)でK補正</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="scroll" style="margin-top:10px;">
-        <table>
-          <thead>
-            <tr>
-              <th>栄養</th><th>アミノ酸 (g/L)</th><th>脂肪 (g/L)</th><th>kcal/mL</th><th>備考</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>アミノ酸10%（汎用）</td><td><b>100</b></td><td>–</td><td>約0.4</td><td>電解質無添加想定（4 kcal/gで算出）</td></tr>
-            <tr><td><b>プレアミンP 7.6%</b></td><td><b>76</b></td><td>–</td><td>約0.30</td><td>小児用AA製剤</td></tr>
-            <tr><td>イントラリポス10%</td><td>–</td><td><b>100</b></td><td><b>1.1</b></td><td>添文の熱量密度</td></tr>
-            <tr><td>イントラリポス20%</td><td>–</td><td><b>200</b></td><td><b>2.0</b></td><td>添文の熱量密度</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div style="margin-top:10px;">
-        <b>出典リンク</b><br>
-        ・<a href="https://www.yueki.com/files/composition_search/water_electrolyte.pdf" target="_blank" rel="noopener">水・電解質製剤 組成表（yueki.com）</a><br>
-        ・<a href="https://www.yueki.com/files/composition_search/nutrition.pdf" target="_blank" rel="noopener">栄養（糖・アミノ酸・脂肪乳剤等）組成表（yueki.com）</a><br>
-        ・高張NaCl/重炭酸Na/アスパラギン酸K等の濃度は各製品の添付文書の標準値
-      </div>
-
-      <div class="muted" style="margin-top:8px;">
-        注: 酢酸リンゲルのNaは製品により130–131 mEq/Lの差があるため、内部DBでは130に正規化。糖量(g/L)はg/容器を体積で割って換算。グルコン酸・アスパラギン酸はいずれも1価アニオンとして扱う。
-      </div>
-    </div>
-  </details>
-
-  <div class="muted">
-    末梢で浸透圧&gt;900 mOsm/Lは警告。K濃度&gt;40 mEq/L、K速度&gt;20 mEq/hは警告。Ca×P, Ca×HCO3-禁忌、Mg×P注意、脂肪は混注不可。
+<details style="margin:10px 0">
+  <summary>このページでできること</summary>
+  <div class="muted" style="margin-top:6px">
+    ・配合禁忌: Ca×P, Ca×HCO3-（禁忌）, Mg×P（注意）, 脂肪乳剤混注不可<br>
+    ・K安全域: 濃度＞40 mEq/L, 速度＞20 mEq/h（合算速度も評価）<br>
+    ・浸透圧: 末梢で900 mOsm/L超は警告（AA寄与は設定で可変）<br>
+    ・GIR/WQ と 栄養（kcal・脂肪 g/kg/日）、ボーラス寄与も合算
   </div>
+</details>
 
-  <!-- コンポーネント候補（Pythonが埋める） -->
-  <datalist id="comp-options"></datalist>
-
-  <!-- ラインUI -->
-  <div id="lines"></div>
-
-  <!-- ボーラス入力 -->
-  <div class="box">
-    <h3>ボーラス投与</h3>
-    <div class="row">
-      <button id="add-bolus">ボーラス行追加</button>
+<details style="margin:10px 0">
+  <summary>参考・出典 / 計算式・組成表（このアプリの根拠）</summary>
+  <div class="muted" style="margin-top:6px">
+    <b>計算式</b>
+    <div class="scroll">
+      <table>
+        <tbody>
+          <tr><th style="width:14rem">GIR</th><td>GIR (mg/kg/min) = 総ブドウ糖[g/日] × 1000 / (体重[kg] × 1440)</td></tr>
+          <tr><th>WQ</th><td>WQ (mL/kg/day) = 総流量[mL/h] × 24 / 体重[kg]</td></tr>
+          <tr><th>理論浸透圧</th><td>mOsm/L = Σ(各イオンの mmol/L) + P[mmol/L] + Glucose[mmol/L] + （AA寄与 9×AA[g/L], 任意）<br>※ mEq→mmol: mmol = mEq / |z|（Na,K,Cl,HCO₃,乳酸,酢酸,グルコン酸=1 / Ca,Mg=2 / クエン酸=3 / 硫酸=2）</td></tr>
+          <tr><th>熱量</th><td>Glucose・AA 4 kcal/g、脂肪 9 kcal/g（脂肪は添文のkcal/mLを優先）</td></tr>
+        </tbody>
+      </table>
     </div>
-    <table id="bolus-table">
-      <thead>
-        <tr>
-          <th>コンポーネント</th>
-          <th>容量 mL</th>
-          <th>回数/日</th>
-          <th>投与時間(分,任意)</th>
-          <th>ルート</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="bolus-tbody"></tbody>
-    </table>
+
+    <div style="margin-top:10px"><b>組成表（1Lあたり / 添加薬は1mLあたり）</b></div>
+
+    <!-- 基本輸液・糖液 -->
+    <div class="scroll" style="margin-top:6px">
+      <table class="ref">
+        <thead>
+          <tr>
+            <th>製剤</th><th>Na</th><th>K</th><th>Ca</th><th>Mg</th><th>Cl</th><th>乳酸</th><th>酢酸</th><th>グルコン酸</th><th>P (mmol/L)</th><th>ブドウ糖 (g/L)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>生理食塩液 0.9%</td><td>154</td><td>–</td><td>–</td><td>–</td><td>154</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+          <tr><td>乳酸リンゲル</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>28</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+          <tr><td>酢酸リンゲル（ヴィーンF相当）</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>–</td><td>28</td><td>–</td><td>–</td><td>–</td></tr>
+          <tr><td>ヴィーンD（酢酸+Glu5%）</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>–</td><td>28</td><td>–</td><td>–</td><td><b>50</b></td></tr>
+          <tr><td>ソリタT1</td><td>90</td><td>–</td><td>–</td><td>–</td><td>70</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>26</b></td></tr>
+          <tr><td>ソリタT2</td><td>84</td><td>20</td><td>–</td><td>–</td><td>66</td><td>20</td><td>–</td><td>–</td><td><b>10</b></td><td><b>32</b></td></tr>
+          <tr><td>ソリタT3</td><td>35</td><td>20</td><td>–</td><td>–</td><td>35</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>43</b></td></tr>
+          <tr><td>ソリタT3G</td><td>35</td><td>20</td><td>–</td><td>–</td><td>35</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>75</b></td></tr>
+          <tr><td><b>フィジオ35輸液</b></td><td><b>35</b></td><td><b>20</b></td><td><b>5</b></td><td><b>3</b></td><td><b>28</b></td><td>–</td><td><b>20</b></td><td><b>5</b></td><td><b>10</b></td><td><b>100</b></td></tr>
+          <tr><td><b>5%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>50</b></td></tr>
+          <tr><td><b>10%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>100</b></td></tr>
+          <tr><td><b>20%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>200</b></td></tr>
+          <tr><td><b>50%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>500</b></td></tr>
+          <tr><td>注射用水（溶媒）</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 添加薬 -->
+    <div class="scroll" style="margin-top:10px">
+      <table class="ref">
+        <thead>
+          <tr>
+            <th>添加薬（1mLあたり）</th><th>Na</th><th>K</th><th>Ca</th><th>Mg</th><th>Cl</th><th>HCO₃⁻</th><th>P (mmol)</th><th>備考</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>KCl 1 mEq/mL（混注）</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td></td></tr>
+          <tr><td>アスパラギン酸K注射液 10mEq/10mL</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>KをCl増やさず補正</td></tr>
+          <tr><td>リン酸ナトリウム 10mmol/20mL</td><td><b>0.75</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>0.50</b></td><td></td></tr>
+          <tr><td>重炭酸ナトリウム 7.0%</td><td><b>0.833</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>0.833</b></td><td>–</td><td>7 g/100 mL ≒ 833 mEq/L</td></tr>
+          <tr><td>重炭酸ナトリウム 8.4%</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td></td></tr>
+          <tr><td>10%塩化ナトリウム注</td><td><b>1.71</b></td><td>–</td><td>–</td><td>–</td><td><b>1.71</b></td><td>–</td><td>–</td><td></td></tr>
+          <tr><td>グルコン酸Ca 8.5%</td><td>–</td><td>–</td><td><b>0.39</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td></td></tr>
+          <tr><td>硫酸Mg 1 mEq/mL</td><td>–</td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 栄養 -->
+    <div class="scroll" style="margin-top:10px">
+      <table class="ref">
+        <thead>
+          <tr><th>栄養</th><th>アミノ酸 (g/L)</th><th>脂肪 (g/L)</th><th>kcal/mL</th><th>備考</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>プレアミンP 7.6%</td><td><b>76</b></td><td>–</td><td>約0.30</td><td>小児用AA製剤</td></tr>
+          <tr><td>イントラリポス10%</td><td>–</td><td><b>100</b></td><td><b>1.1</b></td><td>添文準拠</td></tr>
+          <tr><td>イントラリポス20%</td><td>–</td><td><b>200</b></td><td><b>2.0</b></td><td>添文準拠</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:10px">
+      <b>出典リンク</b><br>
+      ・<a href="https://www.yueki.com/files/composition_search/water_electrolyte.pdf" target="_blank" rel="noopener">水・電解質製剤 組成表（yueki.com）</a><br>
+      ・<a href="https://www.yueki.com/files/composition_search/nutrition.pdf" target="_blank" rel="noopener">栄養（糖・アミノ酸・脂肪乳剤）組成表（yueki.com）</a><br>
+      ・フィジオ35、10%NaCl、重炭酸Na 7%/8.4%、プレアミンP、アスパラギン酸K注は各添付文書標準値
+    </div>
   </div>
+</details>
 
-  <!-- 結果直前の“目立つ計算ボタン”（中央配置） -->
-  <div class="compute-bar">
-    <button id="compute2" class="btn-primary big">計算</button>
-    <span class="muted">結果を更新</span>
-  </div>
+<div class="muted">
+  末梢で浸透圧＞900 mOsm/Lは警告。K濃度＞40 mEq/L、K速度＞20 mEq/hは警告。Ca×P, Ca×HCO3-禁忌、Mg×P注意、脂肪は混注不可。
+</div>
 
-  <h3>結果</h3>
-  <div id="output">(ここに結果が出る)</div>
+<datalist id="comp-options"></datalist>
 
-  <!-- Python本体 -->
-  <script type="py">
+<div id="lines"></div>
+
+<div class="box">
+  <h3>ボーラス投与</h3>
+  <div class="row"><button id="add-bolus">ボーラス行追加</button></div>
+  <table id="bolus-table">
+    <thead>
+      <tr><th>コンポーネント</th><th>容量 mL</th><th>回数/日</th><th>投与時間(分,任意)</th><th>ルート</th><th></th></tr>
+    </thead>
+    <tbody id="bolus-tbody"></tbody>
+  </table>
+</div>
+
+<div class="compute-bar">
+  <button id="compute2" class="btn-primary big">計算</button>
+  <span class="muted">結果を更新</span>
+</div>
+
+<h3>結果</h3>
+<div id="output">(ここに結果が出る)</div>
+
+<script type="py">
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 from js import document
 from pyodide.ffi import create_proxy
 
-# ====== 閾値・仕様 ======
+# ===== 閾値・定数 =====
 PERIPHERAL_OSM_LIMIT = 900.0
-GIR_LIMIT_GENERAL    = 5.0
-GIR_TARGET_NEONATE_LOW  = 8.0
-GIR_LIMIT_NEONATE_HIGH  = 12.0
+GIR_LIMIT_GENERAL = 5.0
+GIR_TARGET_NEONATE_LOW = 8.0
+GIR_LIMIT_NEONATE_HIGH = 12.0
 KCL_MAX_CONC = 40.0
 KCL_MAX_RATE = 20.0
 AA_OSM_PER_G = 9.0
 MW = {"GLUCOSE": 180.156}
 
-# 1価アニオンに Gluconate / Aspartate を含める
 ION_ORDER = ["Na","K","Cl","Ca","Mg","Lactate","Acetate","Gluconate","Citrate","Sulfate","Bicarbonate","Aspartate"]
 VALENCE   = {"Na":1,"K":1,"Cl":1,"Bicarbonate":1,"Lactate":1,"Acetate":1,"Gluconate":1,"Ca":2,"Mg":2,"Citrate":3,"Sulfate":2,"Aspartate":1}
 
 def perL(x): return x/1000.0
-def gL(x):  return x/1000.0
+def gL(x): return x/1000.0
 def mmolL(x): return x/1000.0
 
 @dataclass
@@ -288,12 +245,12 @@ class Component:
     aa_g_ml: float = 0.0
     lipid_g_ml: float = 0.0
     kcal_per_ml_override: float | None = None
-    elec_meq_ml: Dict[str, float] = field(default_factory=dict)
+    elec_meq_ml: Dict[str,float] = field(default_factory=dict)
     phosphate_mmol_ml: float = 0.0
     description: str = ""
     def kcal_per_ml(self)->float:
         if self.kcal_per_ml_override is not None: return self.kcal_per_ml_override
-        return (self.glucose_g_ml*4.0)+(self.aa_g_ml*4.0)+(self.lipid_g_ml*9.0)
+        return self.glucose_g_ml*4.0 + self.aa_g_ml*4.0 + self.lipid_g_ml*9.0
 
 @dataclass
 class MixRow:
@@ -315,275 +272,243 @@ class BolusRow:
     minutes: float
     route: str
 
-# ---- 製剤DB（参照表と一致。G5/10/20/50は名称変更）----
+# ===== DB =====
 def build_db()->Dict[str,Component]:
     db: Dict[str,Component] = {}
     db["注射用水（溶媒）"] = Component("注射用水（溶媒）")
 
+    # 晶質・糖液
     db["生理食塩液 0.9%"] = Component("生理食塩液 0.9%", elec_meq_ml={"Na":perL(154),"Cl":perL(154)})
     db["乳酸リンゲル"] = Component("乳酸リンゲル", elec_meq_ml={"Na":perL(130),"K":perL(4),"Ca":perL(3),"Cl":perL(109),"Lactate":perL(28)})
     db["酢酸リンゲル（ヴィーンF相当）"] = Component("酢酸リンゲル（ヴィーンF相当）", elec_meq_ml={"Na":perL(130),"K":perL(4),"Ca":perL(3),"Cl":perL(109),"Acetate":perL(28)})
-    db["酢酸リンゲル＋Glu5%（ヴィーンD相当）」"] = Component("酢酸リンゲル＋Glu5%（ヴィーンD相当）」", glucose_g_ml=gL(50), elec_meq_ml={"Na":perL(130),"K":perL(4),"Ca":perL(3),"Cl":perL(109),"Acetate":perL(28)})
-
+    db["ヴィーンD（酢酸+Glu5%）"] = Component("ヴィーンD（酢酸+Glu5%）", glucose_g_ml=gL(50),
+        elec_meq_ml={"Na":perL(130),"K":perL(4),"Ca":perL(3),"Cl":perL(109),"Acetate":perL(28)})
     db["ソリタT1"]  = Component("ソリタT1",  glucose_g_ml=gL(26), elec_meq_ml={"Na":perL(90),"Cl":perL(70),"Lactate":perL(20)})
     db["ソリタT2"]  = Component("ソリタT2",  glucose_g_ml=gL(32), elec_meq_ml={"Na":perL(84),"K":perL(20),"Cl":perL(66),"Lactate":perL(20)}, phosphate_mmol_ml=mmolL(10))
     db["ソリタT3"]  = Component("ソリタT3",  glucose_g_ml=gL(43), elec_meq_ml={"Na":perL(35),"K":perL(20),"Cl":perL(35),"Lactate":perL(20)})
     db["ソリタT3G"] = Component("ソリタT3G", glucose_g_ml=gL(75), elec_meq_ml={"Na":perL(35),"K":perL(20),"Cl":perL(35),"Lactate":perL(20)})
-
-    # ブドウ糖（名称を%表示に統一）
+    db["フィジオ35輸液"] = Component("フィジオ35輸液",
+        glucose_g_ml=gL(100),
+        elec_meq_ml={"Na":perL(35),"K":perL(20),"Ca":perL(5),"Mg":perL(3),"Cl":perL(28),"Acetate":perL(20),"Gluconate":perL(5)},
+        phosphate_mmol_ml=mmolL(10))
     db["5%ブドウ糖"]  = Component("5%ブドウ糖",  glucose_g_ml=gL(50))
     db["10%ブドウ糖"] = Component("10%ブドウ糖", glucose_g_ml=gL(100))
     db["20%ブドウ糖"] = Component("20%ブドウ糖", glucose_g_ml=gL(200))
     db["50%ブドウ糖"] = Component("50%ブドウ糖", glucose_g_ml=gL(500))
 
     # 添加薬
-    db["KCl 1 mEq/mL（混注）」"] = Component("KCl 1 mEq/mL（混注）」", elec_meq_ml={"K":1.0,"Cl":1.0})
-    db["リン酸Na 10mmol/20mL」"] = Component("リン酸Na 10mmol/20mL」", elec_meq_ml={"Na":0.75}, phosphate_mmol_ml=0.5)
-    db["重炭酸Na 8.4%」"]       = Component("重炭酸Na 8.4%」", elec_meq_ml={"Na":1.0,"Bicarbonate":1.0})
-    db["重炭酸Na 7.0%」"]       = Component("重炭酸Na 7.0%」", elec_meq_ml={"Na":0.84,"Bicarbonate":0.84})
-    db["Caグルコン酸 8.5%」"]    = Component("Caグルコン酸 8.5%」", elec_meq_ml={"Ca":0.39})
-    db["MgSO4 1 mEq/mL」"]       = Component("MgSO4 1 mEq/mL」", elec_meq_ml={"Mg":1.0})
-    db["10%塩化ナトリウム注」"] = Component("10%塩化ナトリウム注」", elec_meq_ml={"Na":1.71,"Cl":1.71})
-    db["アスパラギン酸K注 10mEq/10mL」"] = Component("アスパラギン酸K注 10mEq/10mL」", elec_meq_ml={"K":1.0,"Aspartate":1.0})
-
-    # 複合輸液
-    db["フィジオ35輸液"] = Component(
-        "フィジオ35輸液",
-        glucose_g_ml=gL(100),
-        elec_meq_ml={"Na":perL(35),"K":perL(20),"Ca":perL(5),"Mg":perL(3),"Cl":perL(28),"Acetate":perL(20),"Gluconate":perL(5)},
-        phosphate_mmol_ml=mmolL(10)
-    )
+    db["KCl 1 mEq/mL（混注）"] = Component("KCl 1 mEq/mL（混注）", elec_meq_ml={"K":1.0,"Cl":1.0})
+    db["アスパラギン酸K注射液 10mEq/10mL"] = Component("アスパラギン酸K注射液 10mEq/10mL", elec_meq_ml={"K":1.0,"Aspartate":1.0})
+    db["リン酸ナトリウム 10mmol/20mL"] = Component("リン酸ナトリウム 10mmol/20mL", elec_meq_ml={"Na":0.75}, phosphate_mmol_ml=0.5)
+    db["重炭酸ナトリウム 7.0%"] = Component("重炭酸ナトリウム 7.0%", elec_meq_ml={"Na":0.833,"Bicarbonate":0.833})
+    db["重炭酸ナトリウム 8.4%"] = Component("重炭酸ナトリウム 8.4%", elec_meq_ml={"Na":1.0,"Bicarbonate":1.0})
+    db["10%塩化ナトリウム注"] = Component("10%塩化ナトリウム注", elec_meq_ml={"Na":1.71,"Cl":1.71})
+    db["グルコン酸Ca 8.5%"] = Component("グルコン酸Ca 8.5%", elec_meq_ml={"Ca":0.39})
+    db["硫酸Mg 1 mEq/mL"] = Component("硫酸Mg 1 mEq/mL", elec_meq_ml={"Mg":1.0})
 
     # 栄養
-    db["アミノ酸10%（汎用）」"] = Component("アミノ酸10%（汎用）」", aa_g_ml=gL(100))
-    db["プレアミンP 7.6%」"]   = Component("プレアミンP 7.6%」",   aa_g_ml=gL(76))
-    db["イントラリポス10%」"] = Component("イントラリポス10%」", lipid_g_ml=gL(100), kcal_per_ml_override=1.1)
-    db["イントラリポス20%」"] = Component("イントラリポス20%」", lipid_g_ml=gL(200), kcal_per_ml_override=2.0)
-
+    db["プレアミンP 7.6%"] = Component("プレアミンP 7.6%", aa_g_ml=gL(76))
+    db["イントラリポス10%"] = Component("イントラリポス10%", lipid_g_ml=gL(100), kcal_per_ml_override=1.1)
+    db["イントラリポス20%"] = Component("イントラリポス20%", lipid_g_ml=gL(200), kcal_per_ml_override=2.0)
     return db
 
 DB: Dict[str,Component] = build_db()
-COMP_KEYS = list(DB.keys())
 
-# ====== 計算ロジック ======
+# 入力候補の表示順（指示どおり）
+COMP_ORDER = [
+  # 基本液
+  "生理食塩液 0.9%","乳酸リンゲル","酢酸リンゲル（ヴィーンF相当）","ヴィーンD（酢酸+Glu5%）",
+  "ソリタT1","ソリタT2","ソリタT3","ソリタT3G","フィジオ35輸液",
+  "5%ブドウ糖","10%ブドウ糖","20%ブドウ糖","50%ブドウ糖","10%塩化ナトリウム注","注射用水（溶媒）",
+  # 添加薬（KCl直下にアスパラギン酸K）
+  "KCl 1 mEq/mL（混注）","アスパラギン酸K注射液 10mEq/10mL","リン酸ナトリウム 10mmol/20mL",
+  "重炭酸ナトリウム 7.0%","重炭酸ナトリウム 8.4%","グルコン酸Ca 8.5%","硫酸Mg 1 mEq/mL",
+  # 栄養
+  "プレアミンP 7.6%","イントラリポス10%","イントラリポス20%"
+]
+
+def set_output(text:str):
+    document.getElementById("output").innerText = text
+
+def populate_comp_options():
+    dl = document.getElementById("comp-options")
+    while dl.firstChild: dl.removeChild(dl.firstChild)
+    added = set()
+    for key in COMP_ORDER:
+        if key in DB and key not in added:
+            opt = document.createElement("option"); opt.value = key
+            dl.appendChild(opt); added.add(key)
+    # 予防的（DBにあって順序表に無い場合）
+    for key in DB.keys():
+        if key not in added:
+            opt = document.createElement("option"); opt.value = key
+            dl.appendChild(opt); added.add(key)
+
+@dataclass
+class MixRow: comp_key: str; volume_ml: float
+@dataclass
+class Line: name: str; route: str = "末梢"; flow_ml_h: float = 0.0; rows: List[MixRow] = field(default_factory=list)
+@dataclass
+class BolusRow: comp_key: str; volume_ml: float; count_per_day: int; minutes: float; route: str
+
 def sum_line(line: Line) -> Tuple[float, Dict[str,float], float, float, float, float]:
     total=0.0; totals_meq:Dict[str,float]={}; glu=aa=lip=0.0; phos=0.0
     for r in line.rows:
         comp=DB.get(r.comp_key)
         if not comp or r.volume_ml<=0: continue
         v=r.volume_ml; total+=v
-        glu += comp.glucose_g_ml*v; aa += comp.aa_g_ml*v; lip += comp.lipid_g_ml*v
+        glu+=comp.glucose_g_ml*v; aa+=comp.aa_g_ml*v; lip+=comp.lipid_g_ml*v
         for ion,val in comp.elec_meq_ml.items():
-            totals_meq[ion] = totals_meq.get(ion,0.0) + val*v
-        phos += comp.phosphate_mmol_ml*v
+            totals_meq[ion]=totals_meq.get(ion,0.0)+val*v
+        phos+=comp.phosphate_mmol_ml*v
     return total, totals_meq, glu, aa, lip, phos
 
 def osmolarity(total_ml, totals_meq, glu_g, phos_mmol, aa_g, include_aa)->float:
     if total_ml<=0: return 0.0
-    L = total_ml/1000.0
+    L=total_ml/1000.0
     mOsm=0.0
     for ion,tot_meq in totals_meq.items():
-        z=VALENCE.get(ion,1)
-        mmol = tot_meq / z
-        mOsm += mmol / L
-    mOsm += phos_mmol / L
-    glu_mmol_L = ((glu_g/L)/MW["GLUCOSE"]) * 1000.0
-    mOsm += glu_mmol_L
-    if include_aa:
-        mOsm += (aa_g/L)*AA_OSM_PER_G
+        z=VALENCE.get(ion,1); mmol=tot_meq/z; mOsm+=mmol/L
+    mOsm+=phos_mmol/L
+    glu_mmol_L=((glu_g/L)/MW["GLUCOSE"])*1000.0; mOsm+=glu_mmol_L
+    if include_aa: mOsm+=(aa_g/L)*AA_OSM_PER_G
     return mOsm
 
 def gir_from_total_glu_g_day(total_glu_g_day, wt)->float:
     if wt<=0: return 0.0
     return (total_glu_g_day*1000.0)/(wt*1440.0)
 
-# ====== DOMヘルパ ======
-def set_output(text:str):
-    document.getElementById("output").innerText = text
-
-def populate_comp_options():
-    dl = document.getElementById("comp-options")
-    while dl.firstChild:
-        dl.removeChild(dl.firstChild)
-    for k in COMP_KEYS:
-        opt = document.createElement("option"); opt.value = k; dl.appendChild(opt)
-
-_line_seq = 0
-
+_line_seq=0
 def add_comp_row(tbody):
-    tr = document.createElement("tr")
-    td1 = document.createElement("td"); td2=document.createElement("td"); td3=document.createElement("td")
-    inp = document.createElement("input"); inp.setAttribute("type","text"); inp.setAttribute("list","comp-options"); inp.classList.add("comp"); inp.placeholder = "製品名（入力補助）"
-    vol = document.createElement("input"); vol.setAttribute("type","number"); vol.setAttribute("step","0.1"); vol.classList.add("vol"); vol.placeholder = "例: 100.0"
-    btn = document.createElement("button"); btn.innerText="削除"
+    tr=document.createElement("tr")
+    td1=document.createElement("td"); td2=document.createElement("td"); td3=document.createElement("td")
+    inp=document.createElement("input"); inp.setAttribute("type","text"); inp.setAttribute("list","comp-options"); inp.classList.add("comp"); inp.placeholder="製品名（入力補助）"
+    vol=document.createElement("input"); vol.setAttribute("type","number"); vol.setAttribute("step","0.1"); vol.classList.add("vol"); vol.placeholder="例: 100.0"
+    btn=document.createElement("button"); btn.innerText="削除"
     def _del_row(evt): tr.remove()
-    btn.onclick = create_proxy(_del_row)
+    btn.onclick=create_proxy(_del_row)
     td1.appendChild(inp); td2.appendChild(vol); td3.appendChild(btn)
     tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3)
     tbody.appendChild(tr)
 
 def add_line(evt=None):
-    global _line_seq
-    _line_seq += 1
-    container = document.createElement("div"); container.classList.add("line")
-    title = document.createElement("h3"); title.innerText = f"Line{_line_seq}"
-    hdr = document.createElement("div"); hdr.classList.add("row")
-    lab_flow = document.createElement("label")
-    lab_flow.innerHTML = '流量 mL/h <input class="flow" type="number" step="0.1" placeholder="例: 50.0">'
-    lab_route = document.createElement("label"); lab_route.innerHTML = 'ルート <select class="route"><option>末梢</option><option>中心</option></select>'
-    btn_add = document.createElement("button"); btn_add.innerText="成分行追加"
-    btn_del = document.createElement("button"); btn_del.innerText="このラインを削除"; btn_del.classList.add("btn-danger")
+    global _line_seq; _line_seq+=1
+    container=document.createElement("div"); container.classList.add("line")
+    title=document.createElement("h3"); title.innerText=f"Line{_line_seq}"
+    hdr=document.createElement("div"); hdr.classList.add("row")
+    lab_flow=document.createElement("label"); lab_flow.innerHTML='流量 mL/h <input class="flow" type="number" step="0.1" placeholder="例: 50.0">'
+    lab_route=document.createElement("label"); lab_route.innerHTML='ルート <select class="route"><option>末梢</option><option>中心</option></select>'
+    btn_add=document.createElement("button"); btn_add.innerText="成分行追加"
+    btn_del=document.createElement("button"); btn_del.innerText="このラインを削除"; btn_del.classList.add("btn-danger")
     hdr.appendChild(lab_flow); hdr.appendChild(lab_route); hdr.appendChild(btn_add); hdr.appendChild(btn_del)
 
-    table = document.createElement("table")
-    thead = document.createElement("thead"); thead.innerHTML = "<tr><th>コンポーネント</th><th>容量 mL</th><th></th></tr>"
-    tbody = document.createElement("tbody")
+    table=document.createElement("table")
+    thead=document.createElement("thead"); thead.innerHTML="<tr><th>コンポーネント</th><th>容量 mL</th><th></th></tr>"
+    tbody=document.createElement("tbody")
     table.appendChild(thead); table.appendChild(tbody)
 
     def _add_row(evt): add_comp_row(tbody)
-    btn_add.onclick = create_proxy(_add_row)
+    btn_add.onclick=create_proxy(_add_row)
     def _del_line(evt): container.remove()
-    btn_del.onclick = create_proxy(_del_line)
+    btn_del.onclick=create_proxy(_del_line)
 
     container.appendChild(title); container.appendChild(hdr); container.appendChild(table)
     document.getElementById("lines").appendChild(container)
     add_comp_row(tbody)
 
-# ---- ボーラス ----
 def add_bolus_row(evt=None):
-    tb = document.getElementById("bolus-tbody")
-    tr = document.createElement("tr")
-
-    td1 = document.createElement("td"); td1.setAttribute("data-label","コンポーネント")
-    comp = document.createElement("input"); comp.setAttribute("type","text"); comp.setAttribute("list","comp-options"); comp.classList.add("b-comp"); comp.placeholder="製品名"
-    td1.appendChild(comp)
-
-    td2 = document.createElement("td"); td2.setAttribute("data-label","容量 mL")
-    vol = document.createElement("input"); vol.setAttribute("type","number"); vol.setAttribute("step","0.1"); vol.classList.add("b-vol"); vol.placeholder="例: 20"
-    td2.appendChild(vol)
-
-    td3 = document.createElement("td"); td3.setAttribute("data-label","回数/日")
-    cnt = document.createElement("input"); cnt.setAttribute("type","number"); cnt.setAttribute("step","1"); cnt.classList.add("b-cnt"); cnt.placeholder="1"
-    td3.appendChild(cnt)
-
-    td4 = document.createElement("td"); td4.setAttribute("data-label","投与時間(分)")
-    mins = document.createElement("input"); mins.setAttribute("type","number"); mins.setAttribute("step","1"); mins.classList.add("b-min"); mins.placeholder="例: 30"
-    td4.appendChild(mins)
-
-    td5 = document.createElement("td"); td5.setAttribute("data-label","ルート")
-    route = document.createElement("select"); route.classList.add("b-route")
-    route.innerHTML = '<option>末梢</option><option>中心</option>'
-    td5.appendChild(route)
-
-    td6 = document.createElement("td"); td6.classList.add("actions")
-    btn = document.createElement("button"); btn.innerText="削除"
+    tb=document.getElementById("bolus-tbody"); tr=document.createElement("tr")
+    td1=document.createElement("td"); td1.setAttribute("data-label","コンポーネント")
+    comp=document.createElement("input"); comp.setAttribute("type","text"); comp.setAttribute("list","comp-options"); comp.classList.add("b-comp"); comp.placeholder="製品名"; td1.appendChild(comp)
+    td2=document.createElement("td"); td2.setAttribute("data-label","容量 mL")
+    vol=document.createElement("input"); vol.setAttribute("type","number"); vol.setAttribute("step","0.1"); vol.classList.add("b-vol"); vol.placeholder="例: 20"; td2.appendChild(vol)
+    td3=document.createElement("td"); td3.setAttribute("data-label","回数/日")
+    cnt=document.createElement("input"); cnt.setAttribute("type","number"); cnt.setAttribute("step","1"); cnt.classList.add("b-cnt"); cnt.placeholder="1"; td3.appendChild(cnt)
+    td4=document.createElement("td"); td4.setAttribute("data-label","投与時間(分)")
+    mins=document.createElement("input"); mins.setAttribute("type","number"); mins.setAttribute("step","1"); mins.classList.add("b-min"); mins.placeholder="例: 30"; td4.appendChild(mins)
+    td5=document.createElement("td"); td5.setAttribute("data-label","ルート")
+    route=document.createElement("select"); route.classList.add("b-route"); route.innerHTML='<option>末梢</option><option>中心</option>'; td5.appendChild(route)
+    td6=document.createElement("td"); td6.classList.add("actions")
+    btn=document.createElement("button"); btn.innerText="削除"
     def _del(evt): tr.remove()
-    btn.onclick = create_proxy(_del)
-    td6.appendChild(btn)
-
+    btn.onclick=create_proxy(_del); td6.appendChild(btn)
     tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4); tr.appendChild(td5); tr.appendChild(td6)
     tb.appendChild(tr)
 
 def gather_lines()->List[Line]:
-    out: List[Line] = []
-    lines_div = document.getElementById("lines")
+    out=[]; lines_div=document.getElementById("lines")
     for i in range(lines_div.children.length):
-        node = lines_div.children.item(i)
-        if not node.classList.contains("line"):
-            continue
-        name = node.querySelector("h3").innerText
-        flow = float(node.querySelector(".flow").value or "0")
-        route = node.querySelector(".route").value
-        rows: List[MixRow] = []
-        tb = node.querySelector("tbody")
+        node=lines_div.children.item(i)
+        if not node.classList.contains("line"): continue
+        name=node.querySelector("h3").innerText
+        flow=float(node.querySelector(".flow").value or "0")
+        route=node.querySelector(".route").value
+        rows=[]; tb=node.querySelector("tbody")
         for j in range(tb.children.length):
-            tr = tb.children.item(j)
-            key = tr.querySelector(".comp").value.strip()
-            vol_val = tr.querySelector(".vol").value
-            vol = float(vol_val or "0")
-            if key in DB and vol>0:
-                rows.append(MixRow(key, vol))
+            tr=tb.children.item(j)
+            key=tr.querySelector(".comp").value.strip()
+            vol=float((tr.querySelector(".vol").value or "0"))
+            if key in DB and vol>0: rows.append(MixRow(key, vol))
         out.append(Line(name=name, route=route, flow_ml_h=flow, rows=rows))
     return out
 
 def gather_bolus()->List[BolusRow]:
-    tb = document.getElementById("bolus-tbody")
-    out: List[BolusRow] = []
+    tb=document.getElementById("bolus-tbody"); out=[]
     for i in range(tb.children.length):
-        tr = tb.children.item(i)
-        key = tr.querySelector(".b-comp").value.strip()
-        vol = float((tr.querySelector(".b-vol").value or "0"))
-        cnt = int(float(tr.querySelector(".b-cnt").value or "0"))
-        mins = float(tr.querySelector(".b-min").value or "0")
-        route = tr.querySelector(".b-route").value
-        if key in DB and vol>0 and cnt>0:
-            out.append(BolusRow(key, vol, cnt, mins, route))
+        tr=tb.children.item(i)
+        key=tr.querySelector(".b-comp").value.strip()
+        vol=float((tr.querySelector(".b-vol").value or "0"))
+        cnt=int(float(tr.querySelector(".b-cnt").value or "0"))
+        mins=float(tr.querySelector(".b-min").value or "0")
+        route=tr.querySelector(".b-route").value
+        if key in DB and vol>0 and cnt>0: out.append(BolusRow(key, vol, cnt, mins, route))
     return out
 
 def compute(evt=None):
     try:
-        wt = float(document.getElementById("wt").value or "0")
-        neonate = (document.getElementById("mode").selectedIndex == 1)
-        include_aa = (document.getElementById("aa_osm").selectedIndex == 1)
-        lines = gather_lines()
-        bolus = gather_bolus()
+        wt=float(document.getElementById("wt").value or "0")
+        neonate=(document.getElementById("mode").selectedIndex==1)
+        include_aa=(document.getElementById("aa_osm").selectedIndex==1)
+        lines=gather_lines(); bolus=gather_bolus()
         if not lines and not bolus:
             set_output("ラインかボーラスを入力してくれ。"); return
 
-        total_flow_ml_h = 0.0
-        total_glu_g_day = 0.0
-        total_kcal_day  = 0.0
-        total_lipid_g_day = 0.0
-        alerts: List[str] = []
-        report_lines: List[str] = []
-        report_bolus: List[str] = []
-        total_K_rate_meq_h = 0.0
-        per_day_meq_total: Dict[str,float] = {ion:0.0 for ion in ION_ORDER}
-        per_day_phos_mmol_total: float = 0.0
+        total_flow_ml_h=0.0; total_glu_g_day=0.0; total_kcal_day=0.0; total_lipid_g_day=0.0
+        alerts=[]; report_lines=[]; report_bolus=[]; total_K_rate_meq_h=0.0
+        per_day_meq_total={ion:0.0 for ion in ION_ORDER}; per_day_phos_mmol_total=0.0
 
-        # --- ライン側 ---
         for li in lines:
             total_ml, totals_meq, glu_g, aa_g, lip_g, phos_mmol = sum_line(li)
-            vol_day_ml = li.flow_ml_h*24.0
-            total_flow_ml_h += li.flow_ml_h
+            vol_day_ml=li.flow_ml_h*24.0; total_flow_ml_h+=li.flow_ml_h
+            conc_meq_ml={ion:(totals_meq.get(ion,0.0)/total_ml if total_ml>0 else 0.0) for ion in ION_ORDER}
+            k_conc_meq_L=conc_meq_ml.get("K",0.0)*1000.0
+            k_rate_meq_h=conc_meq_ml.get("K",0.0)*li.flow_ml_h; total_K_rate_meq_h+=k_rate_meq_h
 
-            conc_meq_ml = {ion: (totals_meq.get(ion,0.0)/total_ml if total_ml>0 else 0.0) for ion in ION_ORDER}
-            k_conc_meq_L = conc_meq_ml.get("K",0.0)*1000.0
-            k_rate_meq_h = conc_meq_ml.get("K",0.0)*li.flow_ml_h
-            total_K_rate_meq_h += k_rate_meq_h
-
-            for ion in ION_ORDER:
-                per_day_meq_total[ion] += conc_meq_ml.get(ion,0.0)*vol_day_ml
-            if total_ml>0:
-                per_day_phos_mmol_total += (phos_mmol/total_ml)*vol_day_ml
+            for ion in ION_ORDER: per_day_meq_total[ion]+=conc_meq_ml.get(ion,0.0)*vol_day_ml
+            if total_ml>0: per_day_phos_mmol_total+=(phos_mmol/total_ml)*vol_day_ml
 
             kcal_ml=0.0; lip_g_ml=0.0
             for r in li.rows:
-                comp = DB.get(r.comp_key)
+                comp=DB.get(r.comp_key)
                 if not comp or total_ml<=0: continue
-                frac = r.volume_ml/total_ml
-                kcal_ml += comp.kcal_per_ml()*frac
-                lip_g_ml += comp.lipid_g_ml*frac
-            kcal_day = kcal_ml*vol_day_ml
-            lipid_g_day = lip_g_ml*vol_day_ml
-            total_kcal_day += kcal_day
-            total_lipid_g_day += lipid_g_day
+                frac=r.volume_ml/total_ml
+                kcal_ml+= (comp.kcal_per_ml())*frac
+                lip_g_ml+= comp.lipid_g_ml*frac
+            kcal_day=kcal_ml*vol_day_ml; lipid_g_day=lip_g_ml*vol_day_ml
+            total_kcal_day+=kcal_day; total_lipid_g_day+=lipid_g_day
 
-            osm_th = osmolarity(total_ml, totals_meq, glu_g, phos_mmol, aa_g, include_aa=False)
-            osm_aa = osmolarity(total_ml, totals_meq, glu_g, phos_mmol, aa_g, include_aa=include_aa)
+            osm_th=osmolarity(total_ml, totals_meq, glu_g, phos_mmol, aa_g, include_aa=False)
+            osm_aa=osmolarity(total_ml, totals_meq, glu_g, phos_mmol, aa_g, include_aa=include_aa)
             if li.route=="末梢" and osm_aa>PERIPHERAL_OSM_LIMIT:
                 alerts.append(f"[{li.name}] 浸透圧 {osm_aa:.0f} mOsm/L > {PERIPHERAL_OSM_LIMIT:.0f}（末梢不可）")
 
-            has_ca = conc_meq_ml.get("Ca",0.0)>0
-            has_mg = conc_meq_ml.get("Mg",0.0)>0
-            has_p  = (phos_mmol>0)
-            has_hco3 = conc_meq_ml.get("Bicarbonate",0.0)>0
-            if has_ca and has_p:    alerts.append(f"[{li.name}] 【禁忌】Ca塩×リン酸塩（沈殿）")
+            has_ca=conc_meq_ml.get("Ca",0.0)>0; has_mg=conc_meq_ml.get("Mg",0.0)>0
+            has_p=(phos_mmol>0); has_hco3=conc_meq_ml.get("Bicarbonate",0.0)>0
+            if has_ca and has_p: alerts.append(f"[{li.name}] 【禁忌】Ca塩×リン酸塩（沈殿）")
             if has_ca and has_hco3: alerts.append(f"[{li.name}] 【禁忌】Ca塩×重炭酸（炭酸Ca沈殿）")
-            if has_mg and has_p:    alerts.append(f"[{li.name}] 【注意】Mg塩×リン酸塩（沈殿リスク）")
+            if has_mg and has_p: alerts.append(f"[{li.name}] 【注意】Mg塩×リン酸塩（沈殿リスク）")
             if any(("イントラリポス" in r.comp_key) for r in li.rows) and len(li.rows)>=2:
                 alerts.append(f"[{li.name}] 脂肪乳剤は混注不可（別ルート/Y側管）")
-
             if k_conc_meq_L>KCL_MAX_CONC: alerts.append(f"[{li.name}] K濃度 {k_conc_meq_L:.1f} mEq/L > {KCL_MAX_CONC}")
             if k_rate_meq_h>KCL_MAX_RATE: alerts.append(f"[{li.name}] K投与速度 {k_rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
 
@@ -591,8 +516,7 @@ def compute(evt=None):
             for ion in ION_ORDER:
                 v=conc_meq_ml.get(ion,0.0)*1000.0
                 if v>0: ion_lines.append(f"{ion:>10}: {v:6.2f} mEq/L")
-            if total_ml>0 and phos_mmol>0:
-                ion_lines.append(f"{'P (mmol/L)':>10}: {phos_mmol/(total_ml/1000.0):6.2f}")
+            if total_ml>0 and phos_mmol>0: ion_lines.append(f"{'P (mmol/L)':>10}: {phos_mmol/(total_ml/1000.0):6.2f}")
 
             report_lines.append(
 f"""=== {li.name} ===
@@ -605,60 +529,44 @@ f"""=== {li.name} ===
   脂肪密度: {lip_g_ml:.3f} g/mL   → {lipid_g_day:.2f} g/day
   K濃度: {k_conc_meq_L:.1f} mEq/L   K速度: {k_rate_meq_h:.1f} mEq/h
 """)
+            if total_ml>0: total_glu_g_day += (glu_g/total_ml)*vol_day_ml
 
-            if total_ml>0:
-                total_glu_g_day += (glu_g/total_ml)*vol_day_ml
-
-        # --- ボーラス側 ---
-        for i, b in enumerate(bolus, start=1):
-            comp = DB[b.comp_key]
-            dose_meq = {ion: comp.elec_meq_ml.get(ion,0.0)*b.volume_ml for ion in ION_ORDER}
-            dose_p   = comp.phosphate_mmol_ml*b.volume_ml
-            dose_glu = comp.glucose_g_ml*b.volume_ml
-            dose_aa  = comp.aa_g_ml*b.volume_ml
-            dose_fat = comp.lipid_g_ml*b.volume_ml
-
-            for ion,v in dose_meq.items():
-                per_day_meq_total[ion] += v * b.count_per_day
-            per_day_phos_mmol_total += dose_p * b.count_per_day
-            total_glu_g_day += dose_glu * b.count_per_day
-            total_kcal_day += (comp.kcal_per_ml() * b.volume_ml) * b.count_per_day
-            total_lipid_g_day += dose_fat * b.count_per_day
+        for i,b in enumerate(bolus, start=1):
+            comp=DB.get(b.comp_key)
+            dose_meq={ion: comp.elec_meq_ml.get(ion,0.0)*b.volume_ml for ion in ION_ORDER}
+            dose_p=comp.phosphate_mmol_ml*b.volume_ml; dose_glu=comp.glucose_g_ml*b.volume_ml
+            dose_aa=comp.aa_g_ml*b.volume_ml; dose_fat=comp.lipid_g_ml*b.volume_ml
+            for ion,v in dose_meq.items(): per_day_meq_total[ion]+=v*b.count_per_day
+            per_day_phos_mmol_total+=dose_p*b.count_per_day
+            total_glu_g_day+=dose_glu*b.count_per_day
+            total_kcal_day+=(comp.kcal_per_ml()*b.volume_ml)*b.count_per_day
+            total_lipid_g_day+=dose_fat*b.count_per_day
 
             if b.minutes>0:
-                rate_meq_h = (dose_meq.get("K",0.0)) / (b.minutes/60.0)
-                if rate_meq_h > KCL_MAX_RATE:
-                    alerts.append(f"[ボーラス#{i}] K投与速度 {rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
-            k_conc = comp.elec_meq_ml.get("K",0.0)*1000.0
-            if b.route=="末梢" and k_conc > KCL_MAX_CONC:
-                alerts.append(f"[ボーラス#{i}] K濃度 {k_conc:.0f} mEq/L > {KCL_MAX_CONC}（末梢）")
-            tot_elec = {ion: dose_meq.get(ion,0.0) for ion in ION_ORDER}
-            osm = osmolarity(b.volume_ml, tot_elec, dose_glu, dose_p, dose_aa, include_aa=False)
-            if b.route=="末梢" and osm>PERIPHERAL_OSM_LIMIT:
-                alerts.append(f"[ボーラス#{i}] 浸透圧 {osm:.0f} mOsm/L > {PERIPHERAL_OSM_LIMIT}（末梢）")
-            if comp.lipid_g_ml>0:
-                alerts.append(f"[ボーラス#{i}] 脂肪乳剤はボーラス不適（緩徐投与を検討）")
-
+                rate_meq_h=(dose_meq.get("K",0.0))/(b.minutes/60.0)
+                if rate_meq_h>KCL_MAX_RATE: alerts.append(f"[ボーラス#{i}] K投与速度 {rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
+            k_conc=comp.elec_meq_ml.get("K",0.0)*1000.0
+            if b.route=="末梢" and k_conc>KCL_MAX_CONC: alerts.append(f"[ボーラス#{i}] K濃度 {k_conc:.0f} mEq/L > {KCL_MAX_CONC}（末梢）")
+            tot_elec={ion:dose_meq.get(ion,0.0) for ion in ION_ORDER}
+            osm=osmolarity(b.volume_ml, tot_elec, dose_glu, dose_p, dose_aa, include_aa=False)
+            if b.route=="末梢" and osm>PERIPHERAL_OSM_LIMIT: alerts.append(f"[ボーラス#{i}] 浸透圧 {osm:.0f} mOsm/L > {PERIPHERAL_OSM_LIMIT}（末梢）")
+            if comp.lipid_g_ml>0: alerts.append(f"[ボーラス#{i}] 脂肪乳剤はボーラス不適（緩徐投与を検討）")
             report_bolus.append(f"- #{i} {b.comp_key}  {b.volume_ml:.1f} mL × {b.count_per_day}/日, ルート:{b.route}")
 
-        # --- 指標 ---
-        WQ  = (total_flow_ml_h*24.0)/wt if wt>0 else 0.0
-        GIR = gir_from_total_glu_g_day(total_glu_g_day, wt)
-
-        if total_K_rate_meq_h > KCL_MAX_RATE:
-            alerts.append(f"総K投与速度 {total_K_rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
-
+        WQ=(total_flow_ml_h*24.0)/wt if wt>0 else 0.0
+        GIR=gir_from_total_glu_g_day(total_glu_g_day, wt)
+        if total_K_rate_meq_h>KCL_MAX_RATE: alerts.append(f"総K投与速度 {total_K_rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
         if neonate:
-            if GIR > GIR_LIMIT_NEONATE_HIGH: alerts.append(f"GIR {GIR:.2f} mg/kg/min > {GIR_LIMIT_NEONATE_HIGH}（新生児上限）")
-            elif GIR < GIR_TARGET_NEONATE_LOW: alerts.append(f"GIR {GIR:.2f} mg/kg/min < {GIR_TARGET_NEONATE_LOW}（新生児目標域未満）")
+            if GIR>GIR_LIMIT_NEONATE_HIGH: alerts.append(f"GIR {GIR:.2f} mg/kg/min > {GIR_LIMIT_NEONATE_HIGH}（新生児上限）")
+            elif GIR<GIR_TARGET_NEONATE_LOW: alerts.append(f"GIR {GIR:.2f} mg/kg/min < {GIR_TARGET_NEONATE_LOW}（新生児目標域未満）")
         else:
-            if GIR > GIR_LIMIT_GENERAL: alerts.append(f"GIR {GIR:.2f} mg/kg/min > {GIR_LIMIT_GENERAL}（高血糖リスク）")
+            if GIR>GIR_LIMIT_GENERAL: alerts.append(f"GIR {GIR:.2f} mg/kg/min > {GIR_LIMIT_GENERAL}（高血糖リスク）")
 
         ions_block=[]
         for ion in ION_ORDER:
-            v_day = per_day_meq_total[ion]
+            v_day=per_day_meq_total[ion]
             ions_block.append(f"{ion:11s}: {v_day:7.2f}  ({(v_day/wt if wt>0 else 0.0):.3f})  mEq/day (mEq/kg/day)")
-        p_day = per_day_phos_mmol_total
+        p_day=per_day_phos_mmol_total
         ions_block.append(f"{'P (mmol/day)':11s}: {p_day:7.2f}  ({(p_day/wt if wt>0 else 0.0):.3f})  mmol/day (mmol/kg/day)")
 
         out=[]
@@ -687,31 +595,22 @@ f"""=== {li.name} ===
             for a in alerts: out.append(f" - {a}")
         else:
             out.append("特記アラートなし。")
-
-        # 最下段の注意書き（小さめの一行）
         out.append("")
         out.append("—")
         out.append("※本ツールはあくまでも補助であり、必ず検算を要する。")
-
         set_output("\n".join(out))
     except Exception as e:
         set_output(f"[例外] {e}")
 
-# 初期化とイベント接続
 def init():
-    populate_comp_options()
-    add_line()
-    add_bolus_row()
+    populate_comp_options(); add_line(); add_bolus_row()
 
-# ボタン結線
 document.getElementById("add-line").onclick = create_proxy(add_line)
 document.getElementById("compute").onclick  = create_proxy(compute)
 document.getElementById("add-bolus").onclick = create_proxy(add_bolus_row)
-el2 = document.getElementById("compute2")
-if el2 is not None:
-    el2.onclick = create_proxy(compute)
-
+el2=document.getElementById("compute2")
+if el2 is not None: el2.onclick = create_proxy(compute)
 init()
-  </script>
+</script>
 </body>
 </html>
