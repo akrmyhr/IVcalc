@@ -32,7 +32,7 @@
   .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
   #output{
     white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;
-    background:#0b1020;color:#d3ffd3;padding:12px;border-radius:12px;min-height:240px
+    background:#0b1020;color:#d3ffd3;padding:12px;border-radius:12px;min-height:260px
   }
   details{border:1px solid #eee;border-radius:12px;padding:8px 12px;background:#fbfbfb}
   details>summary{cursor:pointer;font-weight:600}
@@ -49,9 +49,7 @@
     input[type=text]{width:100%}
     #bolus-table thead{display:none}
     #bolus-table,#bolus-table tbody,#bolus-table tr,#bolus-table td{display:block;width:100%;border:0}
-    #bolus-table tbody tr{
-      background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:10px 12px;margin:10px 0
-    }
+    #bolus-table tbody tr{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:10px 12px;margin:10px 0}
     #bolus-table td{padding:6px 0}
     #bolus-table td::before{content:attr(data-label);display:block;font-size:.8rem;color:#666;margin-bottom:2px}
     #bolus-table td.actions{text-align:right;padding-top:4px}
@@ -62,14 +60,13 @@
   .vit small {color:#888}
 
   /* 薬用量UI */
-  .drug-grid{display:grid;grid-template-columns:1fr;gap:8px}
+  .drug-grid{display:grid;grid-template-columns:1fr;gap:10px}
   .drug{border:1px solid #e8e8e8;border-radius:10px;padding:8px;background:#fff}
   .drug h4{margin:2px 0 6px;font-size:1.0rem}
   .drug .row{margin-bottom:4px}
   .tags{font-size:.82rem;color:#555}
   .note{font-size:.88rem;color:#555}
   .warn{color:#b91c1c;font-weight:600}
-  .ok{color:#166534;font-weight:600}
   .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
 </style>
 </head>
@@ -97,7 +94,7 @@
 <details style="margin:10px 0">
   <summary>使い方</summary>
   <div class="muted" style="margin-top:6px">
-    1) 体重(kg) → 2) ライン追加（ルート・成分・容量mL・流量mL/h） → 3) 必要なら下でボーラス入力（容量・回数/日・投与時間・ルート） → 4) 計算。<br>
+    1) 体重(kg) → 2) ライン追加（ルート・成分・容量mL・流量mL/h） → 3) 必要なら下でボーラス入力 → 4) 計算。<br>
     ※ <b>オーツカMV注（1組）</b>は<strong>容量mL欄＝組数</strong>で入力（例：1組なら「1」）。
   </div>
 </details>
@@ -109,103 +106,179 @@
     ・K安全域: 濃度＞40 mEq/L, 速度＞20 mEq/h（合算速度も評価）<br>
     ・浸透圧: 末梢で900 mOsm/L超は警告（AA寄与は設定で可変）<br>
     ・GIR/WQ と 栄養（kcal・脂肪 g/kg/日）、ボーラス寄与も合算<br>
-    ・<b>ビタミン量（MV等）</b>も合算表示（CV専用の警告あり）
+    ・<b>薬用ポンプ（DOA/DOB/NA/アドレナリン/ミルリノン）のmL/h・Na/糖負荷</b>をオプションで合算
   </div>
 </details>
 
 <!-- ★ 薬用量（新生児オプション） -->
-<details class="box">
-  <summary>薬用量（新生児オプション）：フェノバール／プレセデックス／レスピア／フェンタニル／DOA・DOB・ノルアドレナリン</summary>
+<details class="box" open>
+  <summary>薬用量（新生児オプション）</summary>
   <div class="muted" style="margin:6px 0">
-    チェックした薬剤の用量を体重から算出して表示。ここでの値は<strong>配合計に合算しない参考出力</strong>。
+    チェックした薬剤の用量を体重から換算して表示。<br>
+    <label><input type="checkbox" id="merge-pumps"> 薬用ポンプの輸液量/Na/糖 を WQ・GIR・Na/Cl に<strong>合算する</strong></label>
+    （溶媒と「合算用 目標レート」を設定）。
   </div>
+
   <div class="drug-grid">
 
     <div class="drug">
       <label><input type="checkbox" id="chk-pheno"> フェノバール（フェノバルビタール静注）</label>
-      <div class="tags">ローディング20 mg/kg（必要時追加、総量40 mg/kgまで目安）。維持 2.5–5 mg/kg/日。溶解後50 mg/mL。</div>
+      <div class="tags">ローディング20 mg/kg（追加可、総40 mg/kg目安）。維持 2.5–5 mg/kg/日。溶解後50 mg/mL。</div>
       <div class="row">
         <label>ローディング追加(任意, mg/kg) <input id="pheno-topup" type="number" step="0.1" placeholder="例: 10"></label>
         <label>使用濃度 (mg/mL) <input id="pheno-conc" type="number" step="0.1" value="50"></label>
       </div>
-      <div class="note">配合禁忌（重炭酸・一部カテコラミン等）に注意。</div>
+      <div class="note">配合禁忌に注意。合算は行わない（参考出力のみ）。</div>
     </div>
 
     <div class="drug">
       <label><input type="checkbox" id="chk-precedex"> プレセデックス（デクスメデトミジン）</label>
-      <div class="tags">修正在胎45週以上の小児に適応。<span class="warn">小児は負荷投与しない</span>。維持 0.2–1.4 μg/kg/h。</div>
+      <div class="tags">小児は<strong>負荷投与せず</strong>。維持 0.2–1.4 μg/kg/h（修正在胎45週以上）。</div>
       <div class="row">
         <label>濃度 (μg/mL) <input id="precedex-conc" type="number" step="0.1" value="4"></label>
-        <label>目標（カンマ区切り, μg/kg/h）<input id="precedex-targets" type="text" value="0.2,0.4,0.7,1.0,1.4"></label>
+        <label>目標（μg/kg/h, カンマ区切り）<input id="precedex-targets" type="text" value="0.2,0.4,0.7,1.0,1.4"></label>
       </div>
+      <div class="note">合算対象外（参考出力のみ）。</div>
     </div>
 
     <div class="drug">
       <label><input type="checkbox" id="chk-respia"> レスピア（カフェインクエン酸塩）</label>
-      <div class="tags">初回 20 mg/kg（= 本剤1 mL/kg, 30分静注）。維持 5 mg/kg/日（= 0.25 mL/kg/日）、必要時10 mg/kg/日（= 0.5 mL/kg/日）。</div>
+      <div class="tags">初回20 mg/kg（=1 mL/kg, 30分静注）。維持5 mg/kg/日（=0.25 mL/kg/日）。</div>
     </div>
 
     <div class="drug">
-      <label><input type="checkbox" id="chk-fentanyl"> フェンタニル（鎮痛・鎮静）</label>
-      <div class="tags">参考：持続 1–5 μg/kg/h（保守的 0.5–1）。ボーラス 1–2 μg/kg。</div>
+      <label><input type="checkbox" id="chk-fentanyl"> フェンタニル</label>
+      <div class="tags">持続 0.5–5 μg/kg/h。ボーラス 1–2 μg/kg。</div>
       <div class="row">
         <label>濃度 (μg/mL) <input id="fentanyl-conc" type="number" step="0.1" value="10"></label>
         <label>目標（μg/kg/h）<input id="fentanyl-targets" type="text" value="0.5,1,2,5"></label>
         <label>ボーラス候補（μg/kg）<input id="fentanyl-bolus" type="text" value="1,2"></label>
       </div>
+      <div class="note">合算対象外（参考出力のみ）。</div>
     </div>
 
+    <!-- DOA -->
     <div class="drug">
-      <label><input type="checkbox" id="chk-doa"> DOA（ドパミン）とγ換算</label>
-      <div class="tags">γ定義：1 γ = 1 μg/kg/min。一般式 mL/h = (γ × 体重 × 60) / 濃度(μg/mL)。</div>
+      <label><input type="checkbox" id="chk-doa"> DOA（ドパミン）</label>
+      <div class="tags">γ: 1 μg/kg/min。標準式 mL/h = (γ×体重×60)/濃度(μg/mL)。ANMF体重比例：<span class="mono">1 mL/h = 40 γ</span>。</div>
       <div class="row">
         <label>方式
           <select id="doa-mode">
-            <option value="std">標準濃度で換算（0.8 or 1.6 mg/mLなど）</option>
-            <option value="anmf">ANMF方式（120 mg/kg→50 mL；1 mL/h = 40 γ）</option>
+            <option value="std">標準換算（濃度で計算）</option>
+            <option value="anmf">ANMF方式（1 mL/h = 40 γ）</option>
           </select>
         </label>
-        <label>標準濃度 (mg/mL) <input id="doa-conc" type="number" step="0.1" value="1.6"></label>
-        <label>γ候補（カンマ区切り）<input id="doa-gammas" type="text" value="3,5,7,10,15,20"></label>
-        <label>在庫濃度(原液, mg/mL, 任意) <input id="doa-stock" type="number" step="0.1" placeholder="例: 40"></label>
+        <label>濃度 (mg/mL) <input id="doa-conc" type="number" step="0.1" value="1.6"></label>
+        <label>γ候補 <input id="doa-gammas" type="text" value="3,5,7,10,15,20"></label>
       </div>
-      <div class="note">ANMF方式は体重比例調製。1 mL/h = 40 γで、mL/hは体重に依らず一定。</div>
+      <div class="row">
+        <label>合算用 目標γ <input id="doa-use" type="number" step="0.1" placeholder="例: 5"></label>
+        <label>溶媒
+          <select id="doa-dil">
+            <option value="D5W">D5W</option><option value="NS09">0.9%NaCl</option><option value="NS045">0.45%NaCl</option><option value="CUST">カスタム</option>
+          </select>
+        </label>
+        <label>Na mEq/L(カスタム) <input id="doa-na" type="number" step="1" value="0"></label>
+        <label>糖 g/L(カスタム) <input id="doa-glu" type="number" step="1" value="0"></label>
+      </div>
+      <div class="note">高濃度はCV前提。</div>
     </div>
 
-    <!-- ★ 新規：DOB -->
+    <!-- DOB -->
     <div class="drug">
       <label><input type="checkbox" id="chk-dob"> DOB（ドブタミン）</label>
-      <div class="tags">範囲 5–20 μg/kg/min（文献により2–25）。</div>
+      <div class="tags">範囲 5–20 μg/kg/min。ANMF固定濃度1000 μg/mLなら <span class="mono">mL/h = γ×体重×0.06</span>。</div>
       <div class="row">
         <label>方式
           <select id="dob-mode">
-            <option value="std">標準濃度で換算</option>
-            <option value="fixed">固定濃度 1000 μg/mL（ANMF）</option>
+            <option value="std">標準換算</option>
+            <option value="fixed">固定 1000 μg/mL</option>
           </select>
         </label>
         <label>濃度 (μg/mL) <input id="dob-conc" type="number" step="1" value="1000"></label>
-        <label>γ候補（カンマ区切り）<input id="dob-gammas" type="text" value="3,5,7,10,15,20"></label>
+        <label>γ候補 <input id="dob-gammas" type="text" value="3,5,7,10,15,20"></label>
       </div>
-      <div class="note">固定濃度1000 μg/mL時は <span class="mono">mL/h = γ × 体重 × 0.06</span>（ANMF）。</div>
+      <div class="row">
+        <label>合算用 目標γ <input id="dob-use" type="number" step="0.1"></label>
+        <label>溶媒
+          <select id="dob-dil">
+            <option value="D5W">D5W</option><option value="NS09">0.9%NaCl</option><option value="NS045">0.45%NaCl</option><option value="CUST">カスタム</option>
+          </select>
+        </label>
+        <label>Na mEq/L <input id="dob-na" type="number" step="1" value="0"></label>
+        <label>糖 g/L <input id="dob-glu" type="number" step="1" value="0"></label>
+      </div>
     </div>
 
-    <!-- ★ 新規：ノルアドレナリン -->
+    <!-- NA -->
     <div class="drug">
-      <label><input type="checkbox" id="chk-na"> ノルアドレナリン（NA, ノルエピネフリン）</label>
-      <div class="tags">開始 0.05–0.1 μg/kg/min、一般的範囲 0.05–0.5、状況により上限 1–2 μg/kg/min。</div>
+      <label><input type="checkbox" id="chk-na"> ノルアドレナリン（NA）</label>
+      <div class="tags">開始 0.05–0.1 μg/kg/min、一般 0.05–0.5（状況で1–2まで）。ANMF体重比例：<span class="mono">1 mL/h = 0.05 / 0.2 / 0.4 γ</span>。</div>
       <div class="row">
         <label>方式
           <select id="na-mode">
-            <option value="std">標準濃度で換算</option>
+            <option value="std">標準換算</option>
             <option value="anmf005">ANMF 1 mL/h = 0.05 γ</option>
             <option value="anmf02">ANMF 1 mL/h = 0.2 γ</option>
             <option value="anmf04">ANMF 1 mL/h = 0.4 γ</option>
           </select>
         </label>
         <label>濃度 (μg/mL) <input id="na-conc" type="number" step="1" value="16"></label>
-        <label>γ候補（カンマ区切り）<input id="na-gammas" type="text" value="0.05,0.1,0.2,0.3,0.5,1.0"></label>
+        <label>γ候補 <input id="na-gammas" type="text" value="0.05,0.1,0.2,0.3,0.5,1.0"></label>
       </div>
-      <div class="note">NAは原則CVライン。ANMFの体重比例調製を選ぶと、<span class="mono">mL/h = γ / 定数</span>で体重に依らず一定。</div>
+      <div class="row">
+        <label>合算用 目標γ <input id="na-use" type="number" step="0.01" placeholder="例:0.1"></label>
+        <label>溶媒
+          <select id="na-dil">
+            <option value="D5W">D5W</option><option value="NS09">0.9%NaCl</option><option value="NS045">0.45%NaCl</option><option value="CUST">カスタム</option>
+          </select>
+        </label>
+        <label>Na mEq/L <input id="na-na" type="number" step="1" value="0"></label>
+        <label>糖 g/L <input id="na-glu" type="number" step="1" value="0"></label>
+      </div>
+      <div class="note">NAは原則CV。</div>
+    </div>
+
+    <!-- アドレナリン -->
+    <div class="drug">
+      <label><input type="checkbox" id="chk-epi"> アドレナリン（エピネフリン）</label>
+      <div class="tags">新生児で 0.05–1 μg/kg/min 目安、状況により1.5まで。標準式 mL/h = (μg/kg/min×体重×60)/濃度(μg/mL)。</div>
+      <div class="row">
+        <label>濃度 (μg/mL) <input id="epi-conc" type="number" step="1" value="100"></label>
+        <label>候補（μg/kg/min）<input id="epi-gammas" type="text" value="0.05,0.1,0.2,0.3,0.5,1.0"></label>
+      </div>
+      <div class="row">
+        <label>合算用 目標（μg/kg/min） <input id="epi-use" type="number" step="0.01"></label>
+        <label>溶媒
+          <select id="epi-dil">
+            <option value="D5W">D5W</option><option value="NS09">0.9%NaCl</option><option value="NS045">0.45%NaCl</option><option value="CUST">カスタム</option>
+          </select>
+        </label>
+        <label>Na mEq/L <input id="epi-na" type="number" step="1" value="0"></label>
+        <label>糖 g/L <input id="epi-glu" type="number" step="1" value="0"></label>
+      </div>
+    </div>
+
+    <!-- ミルリノン -->
+    <div class="drug">
+      <label><input type="checkbox" id="chk-mil"> ミルリノン</label>
+      <div class="tags">ローディング例：50 μg/kg（10–60分）。維持 0.25–0.75 μg/kg/min（週数で調整報告あり）。</div>
+      <div class="row">
+        <label>濃度 (μg/mL) <input id="mil-conc" type="number" step="1" value="200"></label>
+        <label>維持候補（μg/kg/min）<input id="mil-rates" type="text" value="0.25,0.5,0.75"></label>
+        <label>ローディング（μg/kg, 任意）<input id="mil-load" type="number" step="1" value="50"></label>
+        <label>ローディング時間(分) <input id="mil-min" type="number" step="1" value="30"></label>
+      </div>
+      <div class="row">
+        <label>合算用 目標（μg/kg/min）<input id="mil-use" type="number" step="0.01"></label>
+        <label>溶媒
+          <select id="mil-dil">
+            <option value="D5W">D5W</option><option value="NS09">0.9%NaCl</option><option value="NS045">0.45%NaCl</option><option value="CUST">カスタム</option>
+          </select>
+        </label>
+        <label>Na mEq/L <input id="mil-na" type="number" step="1" value="0"></label>
+        <label>糖 g/L <input id="mil-glu" type="number" step="1" value="0"></label>
+      </div>
     </div>
 
   </div>
@@ -253,36 +326,7 @@
       </table>
     </div>
 
-    <div style="margin-top:10px"><b>組成表（1Lあたり / 添加薬は1mLあたり / MVは1組あたり）</b></div>
-
-    <!-- 基本輸液・糖液：依頼元の表を維持 -->
-    <div class="scroll" style="margin-top:6px">
-      <table class="ref">
-        <thead>
-          <tr>
-            <th>製剤</th><th>Na</th><th>K</th><th>Ca</th><th>Mg</th><th>Cl</th><th>乳酸</th><th>酢酸</th><th>グルコン酸</th><th>P (mmol/L)</th><th>ブドウ糖 (g/L)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>生理食塩液 0.9%</td><td>154</td><td>–</td><td>–</td><td>–</td><td>154</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
-          <tr><td>乳酸リンゲル</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>28</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
-          <tr><td>酢酸リンゲル（ヴィーンF相当）</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>–</td><td>28</td><td>–</td><td>–</td><td>–</td></tr>
-          <tr><td>ヴィーンD（酢酸+Glu5%）</td><td>130</td><td>4</td><td>3</td><td>–</td><td>109</td><td>–</td><td>28</td><td>–</td><td>–</td><td><b>50</b></td></tr>
-          <tr><td>ソリタT1</td><td>90</td><td>–</td><td>–</td><td>–</td><td>70</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>26</b></td></tr>
-          <tr><td>ソリタT2</td><td>84</td><td>20</td><td>–</td><td>–</td><td>66</td><td>20</td><td>–</td><td><b>10</b></td><td><b>32</b></td></tr>
-          <tr><td>ソリタT3</td><td>35</td><td>20</td><td>–</td><td>–</td><td>35</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>43</b></td></tr>
-          <tr><td>ソリタT3G</td><td>35</td><td>20</td><td>–</td><td>–</td><td>35</td><td>20</td><td>–</td><td>–</td><td>–</td><td><b>75</b></td></tr>
-          <tr><td><b>フィジオ35輸液</b></td><td><b>35</b></td><td><b>20</b></td><td><b>5</b></td><td><b>3</b></td><td><b>28</b></td><td>–</td><td><b>20</b></td><td><b>5</b></td><td><b>10</b></td><td><b>100</b></td></tr>
-          <tr><td><b>5%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>50</b></td></tr>
-          <tr><td><b>10%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>100</b></td></tr>
-          <tr><td><b>20%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>200</b></td></tr>
-          <tr><td><b>50%ブドウ糖</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>500</b></td></tr>
-          <tr><td>注射用水（溶媒）</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- 添加薬 -->
+    <!-- 既存の組成表（略、必要部分のみ保持） -->
     <div class="scroll" style="margin-top:10px">
       <table class="ref">
         <thead>
@@ -294,42 +338,18 @@
           <tr><td>KCl 1 mEq/mL（混注）</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td></td></tr>
           <tr><td>アスパラギン酸K注射液 10mEq/10mL</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>KをCl増やさず補正</td></tr>
           <tr><td>リン酸ナトリウム 10mmol/20mL</td><td><b>0.75</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>0.50</b></td><td></td></tr>
-          <tr><td>重炭酸ナトリウム 7.0%</td><td><b>0.833</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>0.833</b></td><td>–</td><td>7 g/100 mL ≒ 833 mEq/L</td></tr>
           <tr><td>重炭酸ナトリウム 8.4%</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td></td></tr>
-          <tr><td>10%塩化ナトリウム注</td><td><b>1.71</b></td><td>–</td><td>–</td><td>–</td><td><b>1.71</b></td><td>–</td><td>–</td><td></td></tr>
-          <tr><td>グルコン酸Ca 8.5%</td><td>–</td><td>–</td><td><b>0.39</b></td><td>–</td><td>–</td><td>–</td><td>–</td><td></td></tr>
-          <tr><td>硫酸Mg 1 mEq/mL</td><td>–</td><td>–</td><td>–</td><td><b>1.00</b></td><td>–</td><td>–</td><td>–</td><td></td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- ビタミン剤（1組あたり） -->
-    <div class="scroll" style="margin-top:10px">
-      <table class="ref">
-        <thead>
-          <tr>
-            <th>ビタミン製剤</th><th>A (IU)</th><th>D (IU)</th><th>E (mg)</th><th>K (mg)</th>
-            <th>B1 (mg)</th><th>B2 (mg)</th><th>B6 (mg)</th><th>B12 (μg)</th>
-            <th>ナイアシン (mg)</th><th>葉酸 (mg)</th><th>C (mg)</th><th>パントテン酸 (mg)</th><th>ビオチン (μg)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><b>オーツカMV注（1組）</b></td>
-            <td><b>3300</b></td><td><b>200</b></td><td><b>10</b></td><td><b>2</b></td>
-            <td><b>3.1</b></td><td><b>3.6</b></td><td><b>4</b></td><td><b>5</b></td>
-            <td><b>40</b></td><td><b>0.4</b></td><td><b>100</b></td><td><b>15</b></td><td><b>60</b></td>
-          </tr>
         </tbody>
       </table>
     </div>
 
     <div style="margin-top:10px">
-      <b>出典リンク（薬用量・γ計算）</b><br>
-      ・ドパミン：ANMF（体重比例調製 1 mL/h=40γ、濃度例）。<br>
-      ・ドブタミン：ANMF固定濃度（1000 μg/mL、mL/h=γ×体重×0.06）。<br>
-      ・ノルアドレナリン：ANMF（0.05, 0.2, 0.4 γ/mL/h の調製例）。<br>
-      ・レンジは下の「根拠」にも明記。
+      <b>出典リンク（薬用量・γ換算）</b><br>
+      ・ドパミン：ANMF（体重比例 1 mL/h=40γ、他）。<br>
+      ・ドブタミン：ANMF固定濃度 1000 μg/mL（一覧表 5–20γでmL/h）。<br>
+      ・ノルアドレナリン：ANMF体重比例（1 mL/h = 0.05 / 0.2 / 0.4 γ）。<br>
+      ・アドレナリン（新生児）：0.05–1 μg/kg/min 目安、式の確認（MSF/QLD）。<br>
+      ・ミルリノン：ローディング/維持レンジ（KEMH Neonatal MPs, Starship Paediatrics）。<br>
     </div>
   </div>
 </details>
@@ -395,6 +415,14 @@ class BolusRow:
     minutes: float
     route: str
 
+@dataclass
+class PumpContrib:
+    name: str
+    ml_h: float
+    na_meq_L: float
+    cl_meq_L: float
+    glu_g_L: float
+
 # ===== DB =====
 def build_db()->Dict[str,Component]:
     db: Dict[str,Component] = {}
@@ -429,7 +457,7 @@ def build_db()->Dict[str,Component]:
     db["グルコン酸Ca 8.5%"] = Component("グルコン酸Ca 8.5%", elec_meq_ml={"Ca":0.39})
     db["硫酸Mg 1 mEq/mL"] = Component("硫酸Mg 1 mEq/mL", elec_meq_ml={"Mg":1.0})
 
-    # ビタミン製剤（1組あたり）
+    # ビタミン
     db["オーツカMV注（1組）"] = Component(
         "オーツカMV注（1組）",
         vitamins_per_unit={
@@ -437,8 +465,7 @@ def build_db()->Dict[str,Component]:
             "B1_mg":3.1, "B2_mg":3.6, "B6_mg":4.0, "B12_ug":5.0,
             "Niacin_mg":40, "Folic_mg":0.4, "C_mg":100, "Pantothenate_mg":15, "Biotin_ug":60
         },
-        cv_only=True,
-        description="容量mL欄＝組数（例:1）。CV専用。"
+        cv_only=True
     )
 
     # 栄養
@@ -586,7 +613,7 @@ def gather_bolus()->List[BolusRow]:
         if key in DB and vol>0 and cnt>0: out.append(BolusRow(key, vol, cnt, mins, route))
     return out
 
-# ====== 薬用量計算（新生児オプション） ======
+# ====== 薬用量（文字出力＋合算用の寄与を返す） ======
 def _parse_float_list(txt: str)->List[float]:
     out=[]
     for t in (txt or "").split(","):
@@ -596,132 +623,181 @@ def _parse_float_list(txt: str)->List[float]:
         except: pass
     return out
 
-def calc_drug_section(wt: float)->List[str]:
-    out=[]
+def dile_profile(prefix:str)->Tuple[float,float,float]:
+    sel = document.getElementById(prefix+"-dil").value
+    if sel=="D5W": return 0.0, 0.0, 50.0
+    if sel=="NS09": return 154.0, 154.0, 0.0
+    if sel=="NS045": return 77.0, 77.0, 0.0
+    # custom
+    try:
+        na=float(document.getElementById(prefix+"-na").value or "0")
+        glu=float(document.getElementById(prefix+"-glu").value or "0")
+        return na, na, glu
+    except:
+        return 0.0,0.0,0.0
+
+def calc_drug_section_and_contribs(wt: float)->Tuple[List[str], List[PumpContrib]]:
+    out=[]; contribs: List[PumpContrib]=[]
+
+    # helper: add contrib if adopt>0
+    def add_contrib(name, mlh, prefix):
+        if mlh<=0: return
+        na,cl,glu = dile_profile(prefix)
+        contribs.append(PumpContrib(name=name, ml_h=mlh, na_meq_L=na, cl_meq_L=cl, glu_g_L=glu))
+        # also textual
+        na_day = mlh*24.0*na/1000.0
+        glu_day= mlh*24.0*glu/1000.0
+        out.append(f"  合算: {name} {mlh:.3f} mL/h, 溶媒[{document.getElementById(prefix+'-dil').value}] → Na {na_day:.2f} mEq/日, 糖 {glu_day:.2f} g/日")
+
     # フェノバール
     if document.getElementById("chk-pheno").checked:
-        conc = float(document.getElementById("pheno-conc").value or "50") # mg/mL
-        topup = float(document.getElementById("pheno-topup").value or "0") # mg/kg
-        load_mg = 20.0*wt
-        add_mg = topup*wt if topup>0 else 0.0
-        total_load_mg = load_mg + add_mg
-        maint_low = 2.5*wt
-        maint_high= 5.0*wt
+        conc = float(document.getElementById("pheno-conc").value or "50")
+        topup = float(document.getElementById("pheno-topup").value or "0")
+        load_mg = 20.0*wt; add_mg = topup*wt if topup>0 else 0.0
+        maint_low = 2.5*wt; maint_high=5.0*wt
         def vol(mg): return (mg/conc) if conc>0 else 0.0
         out.append("— フェノバール（フェノバルビタール） —")
         out.append(f"ローディング: 20 mg/kg → {load_mg:.1f} mg 〔約 {vol(load_mg):.2f} mL @ {conc:g} mg/mL〕")
         if add_mg>0:
             out.append(f"  追加: {topup:g} mg/kg → {add_mg:.1f} mg 〔約 {vol(add_mg):.2f} mL〕")
-            out.append(f"  ローディング合計: {total_load_mg:.1f} mg 〔約 {vol(total_load_mg):.2f} mL〕")
+            out.append(f"  合計: {load_mg+add_mg:.1f} mg 〔約 {vol(load_mg+add_mg):.2f} mL〕")
         out.append(f"維持: 2.5–5 mg/kg/日 → {maint_low:.1f}–{maint_high:.1f} mg/日")
-        out.append("  注: 溶解後は50 mg/mL相当、配合禁忌に注意。")
         out.append("")
+
     # プレセデックス
     if document.getElementById("chk-precedex").checked:
-        conc = float(document.getElementById("precedex-conc").value or "4") # μg/mL
+        conc = float(document.getElementById("precedex-conc").value or "4")
         targets = _parse_float_list(document.getElementById("precedex-targets").value)
         out.append("— プレセデックス（デクスメデトミジン） —")
-        out.append("警告: 小児は負荷投与を行わない。修正在胎45週以上で適応。")
+        out.append("注意: 小児は負荷投与しない。")
         if conc>0:
             for v in targets:
-                mlh = (v*wt*60.0)/conc
-                out.append(f"{v:g} μg/kg/h → {mlh:.3f} mL/h 〔濃度 {conc:g} μg/mL〕")
+                mlh=(v*wt*60.0)/conc
+                out.append(f"{v:g} μg/kg/h → {mlh:.3f} mL/h 〔{conc:g} μg/mL〕")
         out.append("")
-    # レスピア（カフェイン）
+
+    # レスピア
     if document.getElementById("chk-respia").checked:
         out.append("— レスピア（カフェインクエン酸塩） —")
-        out.append(f"初回: 20 mg/kg = 本剤 1.0 mL/kg → {wt*1.0:.2f} mL（30分静注）")
-        out.append(f"維持: 5 mg/kg/日 = 本剤 0.25 mL/kg/日 → {wt*0.25:.2f} mL/日")
-        out.append(f"必要時: 10 mg/kg/日 = 本剤 0.5 mL/kg/日 → {wt*0.5:.2f} mL/日")
+        out.append(f"初回: 20 mg/kg = 1.0 mL/kg → {wt*1.0:.2f} mL（30分）")
+        out.append(f"維持: 5 mg/kg/日 = 0.25 mL/kg/日 → {wt*0.25:.2f} mL/日")
         out.append("")
+
     # フェンタニル
     if document.getElementById("chk-fentanyl").checked:
-        conc = float(document.getElementById("fentanyl-conc").value or "10") # μg/mL
+        conc=float(document.getElementById("fentanyl-conc").value or "10")
         targets=_parse_float_list(document.getElementById("fentanyl-targets").value)
-        bolus  =_parse_float_list(document.getElementById("fentanyl-bolus").value)
+        bolus=_parse_float_list(document.getElementById("fentanyl-bolus").value)
         out.append("— フェンタニル —")
         if conc>0:
             for v in targets:
-                mlh = (v*wt*60.0)/conc
-                out.append(f"持続 {v:g} μg/kg/h → {mlh:.3f} mL/h 〔濃度 {conc:g} μg/mL〕")
-        if bolus:
-            for b in bolus:
-                dose_ug=b*wt
-                vl = dose_ug/conc if conc>0 else 0.0
-                out.append(f"ボーラス {b:g} μg/kg → {dose_ug:.1f} μg 〔約 {vl:.2f} mL〕")
-        out.append("注: 呼吸抑制/胸壁硬直に注意。施設プロトコル優先。")
+                mlh=(v*wt*60.0)/conc
+                out.append(f"持続 {v:g} μg/kg/h → {mlh:.3f} mL/h 〔{conc:g} μg/mL〕")
+        for b in bolus:
+            dose=b*wt; vol=dose/conc if conc>0 else 0.0
+            out.append(f"ボーラス {b:g} μg/kg → {dose:.1f} μg 〔約 {vol:.2f} mL〕")
         out.append("")
-    # DOA（ドパミン）
+
+    # DOA
     if document.getElementById("chk-doa").checked:
-        mode = document.getElementById("doa-mode").value
-        conc_mgml = float(document.getElementById("doa-conc").value or "1.6") # mg/mL
+        mode=document.getElementById("doa-mode").value
+        conc_mgml=float(document.getElementById("doa-conc").value or "1.6")
         gammas=_parse_float_list(document.getElementById("doa-gammas").value)
-        stock_conc= float(document.getElementById("doa-stock").value or "0") # mg/mL
-        out.append("— DOA（ドパミン）／γ換算 —")
-        out.append("定義: 1γ = 1 μg/kg/min。mL/h = (γ × 体重 × 60) / 濃度[μg/mL]")
+        out.append("— DOA（ドパミン） —")
         if mode=="std":
-            conc_ugml = conc_mgml*1000.0
-            if conc_ugml>0:
-                for g in gammas:
-                    mlh = (g*wt*60.0)/conc_ugml
-                    mgh = (g*wt*0.06)
-                    out.append(f"{g:g} γ → {mlh:.3f} mL/h 〔{mgh:.3f} mg/h, 濃度 {conc_mgml:g} mg/mL〕")
-            out.append("濃度例: 0.8 mg/mL, 1.6 mg/mL（施設標準に合わせる）。")
-        else:
-            need_mg = 120.0*wt
-            out.append(f"調製: 原薬 {need_mg:.1f} mg を50 mLに（120 mg/kg→50 mL）。⇒ 1 mL/h = 40 γ")
-            if stock_conc>0:
-                draw_ml = need_mg/stock_conc
-                out.append(f"  在庫濃度 {stock_conc:g} mg/mL → 吸い上げ {draw_ml:.2f} mL")
+            C=conc_mgml*1000.0
             for g in gammas:
-                mlh = g/40.0
-                mgh = (g*wt*0.06)
-                out.append(f"{g:g} γ → {mlh:.3f} mL/h（体重に依らず一定）。〔{mgh:.3f} mg/h相当〕")
+                mlh=(g*wt*60.0)/C if C>0 else 0.0
+                out.append(f"{g:g} γ → {mlh:.3f} mL/h 〔{conc_mgml:g} mg/mL〕")
+        else:
+            out.append("ANMF: 120 mg/kg→50 mL ⇒ 1 mL/h = 40 γ")
+            for g in gammas:
+                out.append(f"{g:g} γ → {g/40.0:.3f} mL/h（体重に依らず）")
+        # 合算
+        use=float(document.getElementById("doa-use").value or "0")
+        if use>0:
+            mlh = (use/40.0) if mode=="anmf" else ((use*wt*60.0)/(conc_mgml*1000.0) if conc_mgml>0 else 0.0)
+            add_contrib("DOA", mlh, "doa")
         out.append("")
-    # DOB（ドブタミン）
+
+    # DOB
     if document.getElementById("chk-dob").checked:
-        mode = document.getElementById("dob-mode").value
-        conc_ugml = float(document.getElementById("dob-conc").value or "1000") # μg/mL
+        mode=document.getElementById("dob-mode").value
+        conc=float(document.getElementById("dob-conc").value or "1000")
         gammas=_parse_float_list(document.getElementById("dob-gammas").value)
         out.append("— DOB（ドブタミン） —")
-        out.append("定義: 1γ = 1 μg/kg/min。")
         if mode=="fixed":
-            for g in gammas:
-                mlh = g*wt*0.06   # 固定1000 μg/mL → 60/1000 = 0.06
-                mgh = (g*wt*0.06)/1000.0  # mg/hに直す場合は/1000（ここはμg基準なので参考）
-                out.append(f"{g:g} γ → {mlh:.3f} mL/h 〔固定 1000 μg/mL〕")
+            for g in gammas: out.append(f"{g:g} γ → {g*wt*0.06:.3f} mL/h（1000 μg/mL）")
         else:
-            if conc_ugml>0:
-                for g in gammas:
-                    mlh = (g*wt*60.0)/conc_ugml
-                    out.append(f"{g:g} γ → {mlh:.3f} mL/h 〔濃度 {conc_ugml:g} μg/mL〕")
-        out.append("レンジ例: 5–20 μg/kg/min（文献により2–25）。")
+            for g in gammas:
+                mlh=(g*wt*60.0)/conc if conc>0 else 0.0
+                out.append(f"{g:g} γ → {mlh:.3f} mL/h 〔{conc:g} μg/mL〕")
+        use=float(document.getElementById("dob-use").value or "0")
+        if use>0:
+            mlh = (use*wt*0.06) if mode=="fixed" else ((use*wt*60.0)/conc if conc>0 else 0.0)
+            add_contrib("DOB", mlh, "dob")
         out.append("")
-    # ノルアドレナリン
+
+    # NA
     if document.getElementById("chk-na").checked:
-        mode = document.getElementById("na-mode").value
-        conc_ugml = float(document.getElementById("na-conc").value or "0") # μg/mL
+        mode=document.getElementById("na-mode").value
+        conc=float(document.getElementById("na-conc").value or "0")
         gammas=_parse_float_list(document.getElementById("na-gammas").value)
         out.append("— ノルアドレナリン（NA） —")
-        out.append("定義: 1γ = 1 μg/kg/min。原則CVライン。")
         if mode=="std":
-            if conc_ugml>0:
-                for g in gammas:
-                    mlh = (g*wt*60.0)/conc_ugml
-                    mgh = (g*wt*0.06)
-                    out.append(f"{g:g} γ → {mlh:.3f} mL/h 〔{mgh:.3f} mg/h, 濃度 {conc_ugml:g} μg/mL〕")
-            else:
-                out.append("濃度が未設定。")
-        else:
-            # ANMF体重比例：1 mL/h = X γ
-            factor_map={"anmf005":0.05,"anmf02":0.2,"anmf04":0.4}
-            X=factor_map.get(mode,0.05)
             for g in gammas:
-                mlh = g / X
-                mgh = (g*wt*0.06)
-                out.append(f"{g:g} γ → {mlh:.3f} mL/h（ANMF 1 mL/h={X} γ）。〔{mgh:.3f} mg/h相当〕")
+                mlh=(g*wt*60.0)/conc if conc>0 else 0.0
+                out.append(f"{g:g} γ → {mlh:.3f} mL/h 〔{conc:g} μg/mL〕")
+        else:
+            factor={"anmf005":0.05,"anmf02":0.2,"anmf04":0.4}[mode]
+            for g in gammas:
+                out.append(f"{g:g} γ → {g/factor:.3f} mL/h（1 mL/h={factor} γ）")
+        use=float(document.getElementById("na-use").value or "0")
+        if use>0:
+            if mode=="std":
+                mlh=(use*wt*60.0)/conc if conc>0 else 0.0
+            else:
+                factor={"anmf005":0.05,"anmf02":0.2,"anmf04":0.4}[mode]
+                mlh=use/factor
+            add_contrib("NA", mlh, "na")
         out.append("")
-    return out
+
+    # アドレナリン
+    if document.getElementById("chk-epi").checked:
+        conc=float(document.getElementById("epi-conc").value or "100")
+        gammas=_parse_float_list(document.getElementById("epi-gammas").value)
+        out.append("— アドレナリン（エピネフリン） —")
+        for g in gammas:
+            mlh=(g*wt*60.0)/conc if conc>0 else 0.0
+            out.append(f"{g:g} μg/kg/min → {mlh:.3f} mL/h 〔{conc:g} μg/mL〕")
+        use=float(document.getElementById("epi-use").value or "0")
+        if use>0:
+            mlh=(use*wt*60.0)/conc if conc>0 else 0.0
+            add_contrib("Epinephrine", mlh, "epi")
+        out.append("")
+
+    # ミルリノン
+    if document.getElementById("chk-mil").checked:
+        conc=float(document.getElementById("mil-conc").value or "200")
+        rates=_parse_float_list(document.getElementById("mil-rates").value)
+        load=float(document.getElementById("mil-load").value or "0")
+        load_min=float(document.getElementById("mil-min").value or "30")
+        out.append("— ミルリノン —")
+        if load>0 and load_min>0 and conc>0:
+            dose=load*wt # μg
+            ml = dose/conc
+            rate_mlh = (ml/(load_min/60.0))
+            out.append(f"ローディング: {load:g} μg/kg → {dose:.0f} μg 〔約 {ml:.2f} mL/ {load_min:g}分 ≒ {rate_mlh:.2f} mL/h〕")
+        if conc>0:
+            for r in rates:
+                mlh=(r*wt*60.0)/conc
+                out.append(f"維持 {r:g} μg/kg/min → {mlh:.3f} mL/h 〔{conc:g} μg/mL〕")
+        use=float(document.getElementById("mil-use").value or "0")
+        if use>0 and conc>0:
+            mlh=(use*wt*60.0)/conc
+            add_contrib("Milrinone", mlh, "mil")
+        out.append("")
+    return out, contribs
 
 def compute(evt=None):
     try:
@@ -783,10 +859,10 @@ def compute(evt=None):
             has_ca=conc_meq_ml.get("Ca",0.0)>0; has_mg=conc_meq_ml.get("Mg",0.0)>0
             has_p=(phos_mmol>0); has_hco3=conc_meq_ml.get("Bicarbonate",0.0)>0
             if has_ca and has_p: alerts.append(f"[{li.name}] 【禁忌】Ca塩×リン酸塩（沈殿）")
-            if has_ca and has_hco3: alerts.append(f"[{li.name}] 【禁忌】Ca塩×重炭酸（炭酸Ca沈殿）")
-            if has_mg and has_p: alerts.append(f"[{li.name}] 【注意】Mg塩×リン酸塩（沈殿リスク）")
+            if has_ca and has_hco3: alerts.append(f"[{li.name}] 【禁忌】Ca塩×重炭酸")
+            if has_mg and has_p: alerts.append(f"[{li.name}] 【注意】Mg塩×リン酸塩")
             if any(("イントラリポス" in r.comp_key) for r in li.rows) and len(li.rows)>=2:
-                alerts.append(f"[{li.name}] 脂肪乳剤は混注不可（別ルート/Y側管）")
+                alerts.append(f"[{li.name}] 脂肪乳剤は混注不可")
             if k_conc_meq_L>KCL_MAX_CONC: alerts.append(f"[{li.name}] K濃度 {k_conc_meq_L:.1f} mEq/L > {KCL_MAX_CONC}")
             if k_rate_meq_h>KCL_MAX_RATE: alerts.append(f"[{li.name}] K投与速度 {k_rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
 
@@ -821,15 +897,6 @@ f"""=== {li.name} ===
             total_kcal_day+=(comp.kcal_per_ml()*b.volume_ml)*b.count_per_day
             total_lipid_g_day+=dose_fat*b.count_per_day
 
-            # ビタミン
-            if comp.vitamins_per_unit:
-                for k,v in comp.vitamins_per_unit.items(): vit_total[k]+=v*b.count_per_day
-                if comp.cv_only and b.route=="末梢":
-                    alerts.append(f"[ボーラス#{i}] 【注意】{comp.name} はCV専用。末梢への投与は避ける。")
-            if comp.vitamins_per_ml:
-                for k,v in comp.vitamins_per_ml.items(): vit_total[k]+=v*b.volume_ml*b.count_per_day
-
-            # K速度/濃度・浸透圧チェック
             if b.minutes>0:
                 rate_meq_h=(dose_meq.get("K",0.0))/(b.minutes/60.0)
                 if rate_meq_h>KCL_MAX_RATE: alerts.append(f"[ボーラス#{i}] K投与速度 {rate_meq_h:.1f} mEq/h > {KCL_MAX_RATE}")
@@ -838,8 +905,24 @@ f"""=== {li.name} ===
             tot_elec={ion:dose_meq.get(ion,0.0) for ion in ION_ORDER}
             osm=osmolarity(b.volume_ml, tot_elec, dose_glu, dose_p, dose_aa, include_aa=False)
             if b.route=="末梢" and osm>PERIPHERAL_OSM_LIMIT: alerts.append(f"[ボーラス#{i}] 浸透圧 {osm:.0f} mOsm/L > {PERIPHERAL_OSM_LIMIT}（末梢）")
-            if comp.lipid_g_ml>0: alerts.append(f"[ボーラス#{i}] 脂肪乳剤はボーラス不適（緩徐投与を検討）")
+            if comp.lipid_g_ml>0: alerts.append(f"[ボーラス#{i}] 脂肪乳剤はボーラス不適")
             report_bolus.append(f"- #{i} {b.comp_key}  {b.volume_ml:.1f} mL × {b.count_per_day}/日, ルート:{b.route}")
+
+        # ===== 薬用量（表示＋合算） =====
+        drug_lines, pump_contribs = calc_drug_section_and_contribs(wt)
+        merge = document.getElementById("merge-pumps").checked
+        extra_flow=0.0; extra_na_day=0.0; extra_cl_day=0.0; extra_glu_day=0.0
+        if merge:
+            for pc in pump_contribs:
+                total_flow_ml_h += pc.ml_h
+                extra_flow += pc.ml_h
+                per_day_meq_total["Na"] += pc.ml_h*24.0*pc.na_meq_L/1000.0
+                per_day_meq_total["Cl"] += pc.ml_h*24.0*pc.cl_meq_L/1000.0
+                add_glu = pc.ml_h*24.0*pc.glu_g_L/1000.0
+                total_glu_g_day += add_glu
+                extra_na_day += pc.ml_h*24.0*pc.na_meq_L/1000.0
+                extra_cl_day += pc.ml_h*24.0*pc.cl_meq_L/1000.0
+                extra_glu_day += add_glu
 
         # 指標
         WQ=(total_flow_ml_h*24.0)/wt if wt>0 else 0.0
@@ -854,9 +937,11 @@ f"""=== {li.name} ===
         # 出力本体
         out=[]
         out.append("=== 概要 ===")
-        out.append(f"総流量(点滴): {total_flow_ml_h:.1f} mL/h")
+        out.append(f"総流量(点滴+{ '薬用ポンプ' if merge else '薬用ポンプ除外' }): {total_flow_ml_h:.2f} mL/h")
+        if merge and extra_flow>0:
+            out.append(f"  └ 薬用ポンプ寄与: +{extra_flow:.2f} mL/h（Na {extra_na_day:.2f} mEq/日, Cl {extra_cl_day:.2f} mEq/日, 糖 {extra_glu_day:.2f} g/日）")
         out.append(f"WQ: {WQ:.1f} mL/kg/day")
-        out.append(f"GIR: {GIR:.3f} mg/kg/min（点滴+ボーラス合算）")
+        out.append(f"GIR: {GIR:.3f} mg/kg/min（点滴±薬用ポンプ+ボーラス）")
         out.append("")
         out.append("=== 電解質（全体） ===")
         ions_block=[]
@@ -868,37 +953,29 @@ f"""=== {li.name} ===
         out.append("\n".join(ions_block))
         out.append("")
         if report_lines:
-            out.append("=== ライン詳細 ===")
-            out.append("\n".join(report_lines)); out.append("")
+            out.append("=== ライン詳細 ==="); out.append("\n".join(report_lines)); out.append("")
         if report_bolus:
-            out.append("=== ボーラス詳細 ===")
-            out.append("\n".join(report_bolus)); out.append("")
+            out.append("=== ボーラス詳細 ==="); out.append("\n".join(report_bolus)); out.append("")
 
         out.append("=== 栄養（全体） ===")
         out.append(f"総kcal: {total_kcal_day:.0f} kcal/day")
         out.append(f"脂肪: {(total_lipid_g_day/wt if wt>0 else 0.0):.2f} g/kg/day")
         out.append("")
 
-        # ビタミン表示
+        # ビタミン
         if any(v for v in vit_total.values()):
             out.append("=== ビタミン（投与量） ===")
-            labels = [
-              ("A_IU","A","IU/日"),("D_IU","D","IU/日"),("E_mg","E","mg/日"),("K_mg","K","mg/日"),
-              ("B1_mg","B1","mg/日"),("B2_mg","B2","mg/日"),("B6_mg","B6","mg/日"),("B12_ug","B12","μg/日"),
-              ("Niacin_mg","ナイアシン","mg/日"),("Folic_mg","葉酸","mg/日"),("C_mg","C","mg/日"),
-              ("Pantothenate_mg","パントテン酸","mg/日"),("Biotin_ug","ビオチン","μg/日")
-            ]
-            lines=[]
+            labels=[("A_IU","A","IU/日"),("D_IU","D","IU/日"),("E_mg","E","mg/日"),("K_mg","K","mg/日"),
+                    ("B1_mg","B1","mg/日"),("B2_mg","B2","mg/日"),("B6_mg","B6","mg/日"),("B12_ug","B12","μg/日"),
+                    ("Niacin_mg","ナイアシン","mg/日"),("Folic_mg","葉酸","mg/日"),("C_mg","C","mg/日"),
+                    ("Pantothenate_mg","パントテン酸","mg/日"),("Biotin_ug","ビオチン","μg/日")]
+            lines=[]; 
             for key,lab,unit in labels:
                 val=vit_total.get(key,0.0)
                 if val>0: lines.append(f"{lab:8s}: {val:g} {unit}")
-            out.append("\n".join(lines))
-            out.append("")
-            out.append("※オーツカMV注はCV専用。末梢への混注は避ける。遮光保護を考慮。")
-            out.append("")
+            out.append("\n".join(lines)); out.append("※MVはCV専用。"); out.append("")
 
-        # 薬用量（新生児オプション）
-        drug_lines = calc_drug_section(wt)
+        # 薬用量の文字出力
         if drug_lines:
             out.append("=== 薬用量（新生児オプション） ===")
             out.extend(drug_lines)
